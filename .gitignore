@@ -1,0 +1,86 @@
+# =========================================================================
+# Application Configuration & Secrets
+# =========================================================================
+application.properties
+application.yml
+**/src/main/resources/application.properties
+**/src/main/resources/application.yml
+application-*.properties
+application-*.yml
+application-*.yaml
+**/src/main/resources/application-*.properties
+**/src/main/resources/application-*.yml
+**/src/main/resources/application-*.yaml
+*.env
+.env.*
+
+# =========================================================================
+# Maven & Build Output
+# =========================================================================
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Compiled class files
+*.class
+
+# =========================================================================
+# Runtime & Generated Files
+# =========================================================================
+receipts/
+logs/
+*.log
+
+# =========================================================================
+# IDEs & Code Editors
+# =========================================================================
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Visual Studio Code
+.vscode/
+
+# Eclipse
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+bin/
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.built-jar.properties
+
+# =========================================================================
+# OS Generated Files
+# =========================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# =========================================================================
+# Diagnostic / Crash Dumps
+# =========================================================================
+*.hprof
+hs_err_pid*
+replay_pid*

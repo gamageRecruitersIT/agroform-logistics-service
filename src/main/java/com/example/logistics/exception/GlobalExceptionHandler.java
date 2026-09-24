@@ -1,0 +1,99 @@
+package com.example.logistics.exception;
+
+import com.example.logistics.dto.response.ApiResponse;
+import feign.FeignException;
+import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
+import java.util.stream.Collectors;
+
+@Slf4j
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    private ResponseEntity<ApiResponse<Object>> build(HttpStatus status, String msg) {
+        return ResponseEntity.status(status).body(ApiResponse.error(msg));
+    }
+
+    // 400 - invalid input / business rule violation
+    @ExceptionHandler({BadRequestException.class, InvalidDeliveryStatusException.class})
+    public ResponseEntity<ApiResponse<Object>> handleBadRequest(RuntimeException ex) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    // 404
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiResponse<Object>> handleNotFound(ResourceNotFoundException ex) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    // 409 - duplicates / vehicle or driver conflicts
+    @ExceptionHandler({DuplicateResourceException.class, VehicleNotAvailableException.class,
+            DriverAlreadyAssignedException.class})
+    public ResponseEntity<ApiResponse<Object>> handleConflict(RuntimeException ex) {
+        return build(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    // 401
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleUnauthorized(UnauthorizedException ex) {
+        return build(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    }
+
+    // 403 - TRANSPORTER / DRIVER / FARMER role checks
+    @ExceptionHandler({ForbiddenException.class, UnauthorizedRoleException.class, AccessDeniedException.class})
+    public ResponseEntity<ApiResponse<Object>> handleForbidden(RuntimeException ex) {
+        return build(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
+    // 400 - @Valid body errors
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse<Object>> handleValidation(MethodArgumentNotValidException ex) {
+        String msg = ex.getBindingResult().getFieldErrors().stream()
+                .map(e -> e.getField() + ": " + e.getDefaultMessage())
+                .collect(Collectors.joining(", "));
+        return build(HttpStatus.BAD_REQUEST, msg.isBlank() ? "Validation failed" : msg);
+    }
+
+    // 400 - @Validated path/query param errors
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Object>> handleConstraint(ConstraintViolationException ex) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    // 400 - bad JSON / wrong param type
+    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
+    public ResponseEntity<ApiResponse<Object>> handleMalformed(Exception ex) {
+        return build(HttpStatus.BAD_REQUEST, "Malformed request or invalid parameter");
+    }
+
+    // 409 - DB constraint violations
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Object>> handleDataIntegrity(DataIntegrityViolationException ex) {
+        log.warn("Data integrity violation", ex);
+        return build(HttpStatus.CONFLICT, "Data conflict: duplicate or invalid reference");
+    }
+
+    // 503 - Feign calls to Order/Warehouse/Communication/Identity services
+    @ExceptionHandler({FeignException.class, ExternalServiceException.class})
+    public ResponseEntity<ApiResponse<Object>> handleDownstream(Exception ex) {
+        log.error("Downstream service error", ex);
+        return build(HttpStatus.SERVICE_UNAVAILABLE, "A dependent service is currently unavailable");
+    }
+
+    // 500 - fallback (details only in logs, not sent to client)
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponse<Object>> handleGeneric(Exception ex) {
+        log.error("Unexpected error", ex);
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
+    }
+}
