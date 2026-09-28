@@ -12,6 +12,8 @@ public class CostPreviewRequest {
     @NotNull(message = "Transporter ID is required")
     private UUID transporterId;
 
+    private UUID transportRequestId;
+
     @NotNull(message = "Product weight is required")
     @Positive(message = "Product weight must be greater than zero")
     private Double productWeight;
