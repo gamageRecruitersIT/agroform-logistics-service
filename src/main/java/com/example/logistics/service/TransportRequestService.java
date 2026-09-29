@@ -1,6 +1,6 @@
 package com.example.logistics.service;
 
-import com.example.logistics.dto.TransportRequestCreateDto;
+import com.example.logistics.dto.request.TransportRequestCreateDto;
 import com.example.logistics.dto.response.TransportRequestResponseDto;
 
 import java.util.UUID;

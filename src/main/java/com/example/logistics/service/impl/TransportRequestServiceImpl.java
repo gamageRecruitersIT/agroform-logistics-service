@@ -1,6 +1,6 @@
 package com.example.logistics.service.impl;
 
-import com.example.logistics.dto.TransportRequestCreateDto;
+import com.example.logistics.dto.request.TransportRequestCreateDto;
 import com.example.logistics.dto.response.ApiResponse;
 import com.example.logistics.dto.response.TransportRequestResponseDto;
 import com.example.logistics.entity.TransportRequest;

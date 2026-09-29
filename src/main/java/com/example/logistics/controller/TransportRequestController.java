@@ -1,6 +1,6 @@
 package com.example.logistics.controller;
 
-import com.example.logistics.dto.TransportRequestCreateDto;
+import com.example.logistics.dto.request.TransportRequestCreateDto;
 import com.example.logistics.dto.response.TransportRequestResponseDto;
 import com.example.logistics.service.TransportRequestService;
 import jakarta.validation.Valid;
