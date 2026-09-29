@@ -1,11 +1,7 @@
 package com.example.logistics.feign.dto;
 
-/**
- * Response received from Warehouse & Inventory Service after a delivery notification.
- *
- * ⚠️ TODO: confirm the actual response contract with the Warehouse team.
- * Expected acknowledgementStatus values: RECEIVED | REJECTED | PENDING
- */
+/** Response received from Warehouse & Inventory Service after a delivery notification.
+ * Expected acknowledgementStatus values: RECEIVED | REJECTED | PENDING */
 public class WarehouseDeliveryNotificationResponse {
 
     private String acknowledgementStatus;

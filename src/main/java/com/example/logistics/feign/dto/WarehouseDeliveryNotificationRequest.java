@@ -3,12 +3,7 @@ package com.example.logistics.feign.dto;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Payload sent to Warehouse & Inventory Service when a delivery
- * is marked DELIVERED or UNLOADED_AT_WAREHOUSE.
- *
- * ⚠️ TODO: confirm endpoint path and field names with Warehouse team.
- */
+/** Payload sent to Warehouse & Inventory Service when a delivery is marked DELIVERED or UNLOADED_AT_WAREHOUSE. */
 public class WarehouseDeliveryNotificationRequest {
 
     private UUID   transportTaskId;
