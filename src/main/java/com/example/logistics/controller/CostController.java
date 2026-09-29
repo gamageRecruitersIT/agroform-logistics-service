@@ -2,7 +2,7 @@ package com.example.logistics.controller;
 
 
 import com.example.logistics.dto.response.ApiResponse;
-import com.example.logistics.dto.CostPreviewRequest;
+import com.example.logistics.dto.request.CostPreviewRequest;
 import com.example.logistics.dto.response.CostPreviewResponse;
 import com.example.logistics.service.impl.TransportCostService;
 import lombok.RequiredArgsConstructor;

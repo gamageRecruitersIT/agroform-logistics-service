@@ -2,7 +2,7 @@ package com.example.logistics.service.impl;
 
 import com.example.logistics.entity.RouteEstimate;
 import com.example.logistics.entity.TransportCostRule;
-import com.example.logistics.dto.CostPreviewRequest;
+import com.example.logistics.dto.request.CostPreviewRequest;
 import com.example.logistics.dto.response.CostPreviewResponse;
 import com.example.logistics.exception.BadRequestException;
 import com.example.logistics.repository.RouteEstimateRepository;
