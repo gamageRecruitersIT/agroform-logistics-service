@@ -17,6 +17,11 @@ public class OrderSummaryDto {
     private String auctionRefCode;
     private UUID farmerId;
     private UUID buyerId;
-    private String paymentStatus; // e.g., PAID, FAILED, PENDING
+    private String paymentStatus;
+    
+    // New fields from Order Service
+    private String productName;
+    private java.math.BigDecimal quantity;
+    private String quantityUnit;
     
 }
