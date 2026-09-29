@@ -1,6 +1,7 @@
 package com.example.logistics.dto.response;
 
 import com.example.logistics.entity.DeliveryStatusEnum;
+import com.example.logistics.entity.TrackingUpdateType;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -14,8 +15,8 @@ import java.util.UUID;
 @Builder
 public class TrackingUpdateResponse {
 
-    private UUID trackingUpdateId;
-    private UUID transportTaskId;
+    private String transportTaskCode;
+    private TrackingUpdateType updateType;
     private DeliveryStatusEnum previousStatus;
     private DeliveryStatusEnum newStatus;
     private boolean delayed;

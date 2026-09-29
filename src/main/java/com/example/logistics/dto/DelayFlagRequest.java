@@ -1,17 +1,15 @@
 package com.example.logistics.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.UUID;
-
 /**
- * Flags (or, via the resolve endpoint, clears) a delay on a transport task's
- * delivery status without changing its current lifecycle status.
+ * Flags (or, via the resolve endpoint, clears) a delay on a transport task without
+ * changing its lifecycle status. The acting user comes from the authenticated caller.
  */
 @Getter
 @Setter
@@ -20,8 +18,6 @@ import java.util.UUID;
 public class DelayFlagRequest {
 
     @NotBlank(message = "reason is required")
+    @Size(max = 500, message = "reason must be at most 500 characters")
     private String reason;
-
-    @NotNull(message = "updatedBy is required")
-    private UUID updatedBy;
 }

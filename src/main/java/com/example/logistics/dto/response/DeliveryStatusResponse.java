@@ -13,7 +13,8 @@ import java.util.UUID;
 @Builder
 public class DeliveryStatusResponse {
 
-    private UUID transportTaskId;
+    /** Public code (e.g. TTK-AB12CD34). Internal UUIDs are never exposed. */
+    private String transportTaskCode;
     private DeliveryStatusEnum currentStatus;
     private boolean delayed;
     private String delayReason;
