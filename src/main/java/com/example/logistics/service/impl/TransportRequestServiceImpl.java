@@ -1,6 +1,6 @@
 package com.example.logistics.service.impl;
 
-import com.example.logistics.dto.request.TransportRequestCreateDto;
+import com.example.logistics.dto.TransportRequestCreateDto;
 import com.example.logistics.dto.response.ApiResponse;
 import com.example.logistics.dto.response.TransportRequestResponseDto;
 import com.example.logistics.entity.TransportRequest;
@@ -38,15 +38,17 @@ public class TransportRequestServiceImpl implements TransportRequestService {
         }
 
         // 2. Verify Order via Feign Client
-//        try {
-//            ApiResponse<OrderSummaryDto> orderResponse = orderPaymentServiceClient.getOrderDetails(dto.getOrderId());
-//            if (orderResponse == null || orderResponse.getData() == null) {
-//                throw new BadRequestException("Failed to retrieve valid order details from Order Service.");
-//            }
-//        } catch (Exception e) {
-//            log.error("Error communicating with Order Payment Service", e);
-//            throw new BadRequestException("Order validation failed. Order may not exist or service unavailable.");
-//        }
+        OrderSummaryDto orderSummary = null;
+        try {
+            ApiResponse<OrderSummaryDto> orderResponse = orderPaymentServiceClient.getOrderDetails(dto.getOrderId());
+            if (orderResponse == null || orderResponse.getData() == null) {
+                throw new BadRequestException("Failed to retrieve valid order details from Order Service.");
+            }
+            orderSummary = orderResponse.getData();
+        } catch (Exception e) {
+            log.error("Error communicating with Order Payment Service", e);
+            throw new BadRequestException("Order validation failed. Reason: " + e.getMessage());
+        }
 
         // 3. Generate Request Code & Map Entity
         String generatedCode = "TRQ-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
@@ -55,10 +57,10 @@ public class TransportRequestServiceImpl implements TransportRequestService {
                 .transportRequestCode(generatedCode)
                 .farmerId(farmerId)
                 .orderId(dto.getOrderId())
-                .auctionRefCode(dto.getAuctionRefCode())
-                .productName(dto.getProductName())
-                .quantity(dto.getQuantity())
-                .quantityUnit(dto.getQuantityUnit() != null ? dto.getQuantityUnit() : "KG")
+                .auctionRefCode(orderSummary != null ? orderSummary.getAuctionRefCode() : null)
+                .productName(orderSummary != null ? orderSummary.getProductName() : "Unknown")
+                .quantity(orderSummary != null ? orderSummary.getQuantity() : java.math.BigDecimal.ZERO)
+                .quantityUnit(orderSummary != null && orderSummary.getQuantityUnit() != null ? orderSummary.getQuantityUnit() : "KG")
                 .pickupLatitude(dto.getPickupLatitude())
                 .pickupLongitude(dto.getPickupLongitude())
                 .pickupAddress(dto.getPickupAddress())
