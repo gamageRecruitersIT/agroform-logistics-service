@@ -1,4 +1,4 @@
-package com.example.logistics.dto.request;
+package com.example.logistics.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
