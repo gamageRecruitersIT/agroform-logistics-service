@@ -1,4 +1,4 @@
-package com.example.logistics.entity;
+package com.example.logistics.entity.enums;
 
 public enum TransportRequestStatusEnum {
     PENDING,

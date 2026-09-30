@@ -1,6 +1,6 @@
 package com.example.logistics.dto.response;
 
-import com.example.logistics.entity.TransportRequestStatusEnum;
+import com.example.logistics.entity.enums.TransportRequestStatusEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
