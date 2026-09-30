@@ -1,8 +1,8 @@
 package com.example.logistics.service.impl;
 
-import com.example.logistics.dto.DelayFlagRequest;
-import com.example.logistics.dto.LocationUpdateRequest;
-import com.example.logistics.dto.TrackingStatusUpdateRequest;
+import com.example.logistics.dto.request.DelayFlagRequest;
+import com.example.logistics.dto.request.LocationUpdateRequest;
+import com.example.logistics.dto.request.TrackingStatusUpdateRequest;
 import com.example.logistics.dto.response.DeliveryStatusResponse;
 import com.example.logistics.dto.response.TrackingUpdateResponse;
 import com.example.logistics.entity.DeliveryStatus;

@@ -1,4 +1,4 @@
-package com.example.logistics.dto;
+package com.example.logistics.dto.request;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;

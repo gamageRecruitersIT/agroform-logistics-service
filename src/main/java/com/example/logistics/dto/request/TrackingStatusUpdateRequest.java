@@ -1,4 +1,4 @@
-package com.example.logistics.dto;
+package com.example.logistics.dto.request;
 
 import com.example.logistics.entity.DeliveryStatusEnum;
 import jakarta.validation.constraints.DecimalMax;
