@@ -21,7 +21,8 @@ public class TransportTaskLookupRepository {
 
     private static final String BASE_SQL = """
             SELECT t.transport_task_id, t.transport_task_code, t.transport_request_id,
-                   t.transporter_id, t.driver_id, r.farmer_id
+                   t.transporter_id, t.driver_id, r.farmer_id,
+                   r.request_status::text AS request_status
             FROM transport_task t
             JOIN transport_request r ON r.transport_request_id = t.transport_request_id
             """;
@@ -32,7 +33,8 @@ public class TransportTaskLookupRepository {
             rs.getObject("transport_request_id", UUID.class),
             rs.getObject("transporter_id", UUID.class),
             rs.getObject("driver_id", UUID.class),
-            rs.getObject("farmer_id", UUID.class));
+            rs.getObject("farmer_id", UUID.class),
+            rs.getString("request_status"));
 
     private final JdbcTemplate jdbc;
 

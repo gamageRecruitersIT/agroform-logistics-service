@@ -13,5 +13,14 @@ public record TransportTaskRef(
         UUID transportRequestId,
         UUID transporterId,
         UUID driverId,
-        UUID farmerId) {
+        UUID farmerId,
+        String requestStatus) {
+
+    /**
+     * True when the parent transport request was cancelled or rejected, i.e. the
+     * delivery must not move any further (owner: Dinujaya's request lifecycle).
+     */
+    public boolean isRequestClosed() {
+        return "CANCELLED".equals(requestStatus) || "REJECTED".equals(requestStatus);
+    }
 }

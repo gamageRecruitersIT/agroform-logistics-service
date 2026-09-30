@@ -113,7 +113,7 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
         List<TrackingUpdate> rows = includeLocations
                 ? trackingUpdateRepository.findByTransportTaskIdOrderByRecordedAtAsc(task.transportTaskId())
                 : trackingUpdateRepository.findByTransportTaskIdAndUpdateTypeNotOrderByRecordedAtAsc(
-                        task.transportTaskId(), TrackingUpdateType.LOCATION);
+                task.transportTaskId(), TrackingUpdateType.LOCATION);
         return rows.stream().map(r -> toTrackingUpdateResponse(r, task)).toList();
     }
 
@@ -160,6 +160,7 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
     public DeliveryStatusResponse updateStatus(String taskCode, TrackingStatusUpdateRequest request, CurrentUser user) {
         TransportTaskRef task = findTask(taskCode);
         authorizeStatusChange(task, user, request.isAuthorizedOverride());
+        requireRequestOpen(task);
         requireCoordinatePair(request.getLatitude(), request.getLongitude());
 
         DeliveryStatus status = findStatusForUpdate(task);
@@ -225,6 +226,7 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
         if (!user.userId().equals(task.driverId())) {
             throw new ForbiddenException("You are not the assigned driver of task " + task.transportTaskCode());
         }
+        requireRequestOpen(task);
 
         DeliveryStatus status = findStatus(task);
         if (status.getCurrentStatus().isTerminal()) {
@@ -254,6 +256,7 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
     public DeliveryStatusResponse flagDelay(String taskCode, DelayFlagRequest request, CurrentUser user) {
         TransportTaskRef task = findTask(taskCode);
         requireDriverOrTransporterOfTask(task, user, "flag a delay");
+        requireRequestOpen(task);
 
         DeliveryStatus status = findStatusForUpdate(task);
 
@@ -340,6 +343,7 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
     // ==================================================================
 
     private DeliveryStatusResponse initialize(TransportTaskRef task) {
+        requireRequestOpen(task);
         if (deliveryStatusRepository.existsByTransportTaskId(task.transportTaskId())) {
             throw new DuplicateResourceException(
                     "Delivery tracking already initialized for transport task " + task.transportTaskCode());
@@ -415,6 +419,15 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
             throw new ForbiddenException(
                     "Transporters can only change the status with authorizedOverride=true; "
                             + "normal step-by-step updates are submitted by the driver");
+        }
+    }
+
+    /** Tracking is frozen once the parent transport request is CANCELLED or REJECTED. */
+    private void requireRequestOpen(TransportTaskRef task) {
+        if (task.isRequestClosed()) {
+            throw new InvalidDeliveryStatusException(
+                    "Transport request of task " + task.transportTaskCode() + " is "
+                            + task.requestStatus() + "; delivery tracking can no longer be changed");
         }
     }
 
