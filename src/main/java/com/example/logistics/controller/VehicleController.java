@@ -1,6 +1,6 @@
 package com.example.logistics.controller;
 
-import com.example.logistics.dto.VehicleRegistrationRequestDto;
+import com.example.logistics.dto.request.VehicleRegistrationRequestDto;
 import com.example.logistics.dto.response.ApiResponse;
 import com.example.logistics.dto.response.VehicleResponseDto;
 import com.example.logistics.entity.enums.VehicleAvailability;
@@ -34,16 +34,13 @@ public class VehicleController {
                 .body(new ApiResponse<>(true, "Vehicle registered successfully", response));
     }
 
-    @GetMapping("/{vehicleId}")
-    public ResponseEntity<ApiResponse<VehicleResponseDto>> getVehicleById(
-            @PathVariable UUID vehicleId) {
-
-        VehicleResponseDto response = vehicleService.getVehicleById(vehicleId);
-
-        return ResponseEntity.ok(
-                new ApiResponse<>(true, "Vehicle fetched successfully", response)
-        );
+    @GetMapping("/{vehicleCode}")
+    public ResponseEntity<ApiResponse<VehicleResponseDto>> getVehicleByCode(
+            @PathVariable String vehicleCode) {
+        VehicleResponseDto response = vehicleService.getVehicleByCode(vehicleCode);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Vehicle fetched successfully", response));
     }
+
 
     @GetMapping("/transporter/{transporterId}")
     public ResponseEntity<ApiResponse<List<VehicleResponseDto>>> getVehiclesByTransporterId(
@@ -56,15 +53,14 @@ public class VehicleController {
         );
     }
 
-    @PatchMapping("/{vehicleId}/status")
+
+    @PatchMapping("/{vehicleCode}/status")
     public ResponseEntity<ApiResponse<VehicleResponseDto>> updateVehicleAvailability(
-            @PathVariable UUID vehicleId,
-            @RequestParam VehicleAvailability status) {
+            @PathVariable String vehicleCode,
+            @RequestParam String status) {
 
-        VehicleResponseDto response = vehicleService.updateVehicleAvailability(vehicleId, status);
-
-        return ResponseEntity.ok(
-                new ApiResponse<>(true, "Vehicle availability updated successfully", response)
-        );
+        VehicleAvailability parsedStatus = VehicleAvailability.fromApi(status);
+        VehicleResponseDto response = vehicleService.updateVehicleAvailability(vehicleCode, parsedStatus);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Vehicle availability updated successfully", response));
     }
 }

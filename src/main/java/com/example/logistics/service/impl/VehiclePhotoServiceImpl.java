@@ -29,13 +29,11 @@ public class VehiclePhotoServiceImpl implements VehiclePhotoService {
     private final VehiclePhotoRepository photoRepository;
     private final VehicleRepository vehicleRepository;
 
-
     private static final String UPLOAD_DIRECTORY = "uploads/vehicle-photos/";
 
     @Override
     @Transactional
     public VehiclePhotoResponseDto uploadPhoto(UUID vehicleId, MultipartFile file, Boolean isPrimary, Integer displayOrder) {
-
 
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found with ID: " + vehicleId));
@@ -58,10 +56,9 @@ public class VehiclePhotoServiceImpl implements VehiclePhotoService {
                 Optional<VehiclePhoto> existingPrimary = photoRepository.findByVehicleVehicleIdAndIsPrimaryTrue(vehicleId);
                 existingPrimary.ifPresent(photo -> {
                     photo.setIsPrimary(false);
-                    photoRepository.save(photo);
+                    photoRepository.saveAndFlush(photo);
                 });
             }
-
 
             String photoUrl = "/api/v1/logistics/vehicles/photos/images/" + newFileName;
 
