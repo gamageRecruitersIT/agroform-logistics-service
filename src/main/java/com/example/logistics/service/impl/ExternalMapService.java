@@ -35,6 +35,7 @@ public class ExternalMapService {
             double distanceKm = summary.path("distance").asDouble() / 1000.0;
             double durationMinutes = summary.path("duration").asDouble() / 60.0;
 
+
             return new double[]{distanceKm, durationMinutes};
 
         } catch (Exception e) {

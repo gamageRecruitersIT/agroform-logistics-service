@@ -2,11 +2,13 @@ package com.example.logistics.service.impl;
 
 import com.example.logistics.entity.RouteEstimate;
 import com.example.logistics.entity.TransportCostRule;
+import com.example.logistics.entity.TransportRequest;
 import com.example.logistics.dto.request.CostPreviewRequest;
 import com.example.logistics.dto.response.CostPreviewResponse;
 import com.example.logistics.exception.BadRequestException;
 import com.example.logistics.repository.RouteEstimateRepository;
 import com.example.logistics.repository.TransportCostRuleRepository;
+import com.example.logistics.repository.TransportRequestRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,7 @@ public class TransportCostService {
     private final TransportCostRuleRepository costRuleRepository;
     private final RouteEstimateRepository routeEstimateRepository;
     private final ExternalMapService externalMapService;
+    private final TransportRequestRepository transportRequestRepository;
 
     @Transactional
     public CostPreviewResponse calculateCostPreview(CostPreviewRequest request) {
@@ -31,7 +34,6 @@ public class TransportCostService {
             throw new BadRequestException("Origin and Destination coordinates are required.");
         }
 
-
         double[] routeData = externalMapService.getDistanceAndDuration(
                 request.getOriginLat(), request.getOriginLng(),
                 request.getDestinationLat(), request.getDestinationLng()
@@ -42,6 +44,16 @@ public class TransportCostService {
 
         if (actualDistanceKm <= 0) {
             throw new BadRequestException("Could not calculate a valid route distance.");
+        }
+
+
+        if (request.getTransportRequestId() != null) {
+            TransportRequest transportRequest = transportRequestRepository.findById(request.getTransportRequestId())
+                    .orElseThrow(() -> new RuntimeException("Transport Request not found"));
+
+
+            transportRequest.setEstimatedDistanceKm(BigDecimal.valueOf(actualDistanceKm));
+            transportRequestRepository.save(transportRequest);
         }
 
         TransportCostRule rule = costRuleRepository.findByTransporterIdAndIsActiveTrue(request.getTransporterId())
@@ -62,8 +74,6 @@ public class TransportCostService {
         estimate.setCostPerKmUsed(rule.getCostPerKm());
         estimate.setCostPerKgUsed(rule.getCostPerKg());
         estimate.setTransportRequestId(request.getTransportRequestId());
-        // If your Entity has an ETA
-        // estimate.setEstimatedTimeMinutes(estimatedTimeMinutes);
 
         RouteEstimate savedEstimate = routeEstimateRepository.save(estimate);
 
