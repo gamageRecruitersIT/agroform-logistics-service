@@ -1,4 +1,4 @@
-﻿package com.example.logistics.repository;
+package com.example.logistics.repository;
 
 import com.example.logistics.entity.DriverAssignment;
 import org.springframework.data.jpa.repository.JpaRepository;

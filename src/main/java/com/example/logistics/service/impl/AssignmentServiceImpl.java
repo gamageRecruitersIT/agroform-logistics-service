@@ -6,6 +6,8 @@ import com.example.logistics.dto.response.TaskResponseDto;
 import com.example.logistics.entity.DriverAssignment;
 import com.example.logistics.entity.TransportRequest;
 import com.example.logistics.entity.TransportTask;
+import com.example.logistics.entity.Vehicle;
+import com.example.logistics.entity.enums.TransportRequestStatusEnum;
 import com.example.logistics.entity.enums.TransportTaskStatus;
 import com.example.logistics.entity.enums.VehicleAvailability;
 import com.example.logistics.exception.BadRequestException;
@@ -14,6 +16,7 @@ import com.example.logistics.exception.ResourceNotFoundException;
 import com.example.logistics.repository.DriverAssignmentRepository;
 import com.example.logistics.repository.TransportRequestRepository;
 import com.example.logistics.repository.TransportTaskRepository;
+import com.example.logistics.repository.VehicleRepository;
 import com.example.logistics.service.AssignmentService;
 import com.example.logistics.service.VehicleService;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +37,7 @@ public class AssignmentServiceImpl implements AssignmentService {
     private final TransportTaskRepository transportTaskRepository;
     private final DriverAssignmentRepository driverAssignmentRepository;
     private final TransportRequestRepository transportRequestRepository;
+    private final VehicleRepository vehicleRepository;
     private final VehicleService vehicleService; // Vasitha's service
 
     @Override
@@ -48,7 +52,7 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Transport request not found: " + dto.getTransportRequestCode()));
 
-        if (request.getRequestStatus() != com.example.logistics.entity.TransportRequestStatusEnum.ACCEPTED) {
+        if (request.getRequestStatus() != TransportRequestStatusEnum.ACCEPTED) {
             throw new BadRequestException(
                     "Transport request must be in ACCEPTED status to assign. Current status: "
                     + request.getRequestStatus());
@@ -69,10 +73,12 @@ public class AssignmentServiceImpl implements AssignmentService {
         }
 
         // Step 4: Validate vehicle is AVAILABLE (throws VehicleNotAvailableException if not)
-        vehicleService.validateVehicleAvailabilityForAssignment(dto.getVehicleId());
+        Vehicle vehicle = vehicleRepository.findById(dto.getVehicleId())
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + dto.getVehicleId()));
+        vehicleService.validateVehicleAvailabilityForAssignment(vehicle.getVehicleCode());
 
         // Step 5: Reserve vehicle — flip status to ASSIGNED
-        vehicleService.updateVehicleAvailability(dto.getVehicleId(), VehicleAvailability.ASSIGNED);
+        vehicleService.updateVehicleAvailability(vehicle.getVehicleCode(), VehicleAvailability.ASSIGNED);
 
         // Step 6: Generate task code
         String taskCode = "TTK-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();

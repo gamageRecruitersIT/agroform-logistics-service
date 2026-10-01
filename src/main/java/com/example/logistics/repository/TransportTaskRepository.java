@@ -1,4 +1,4 @@
-﻿package com.example.logistics.repository;
+package com.example.logistics.repository;
 
 import com.example.logistics.entity.TransportTask;
 import com.example.logistics.entity.enums.TransportTaskStatus;

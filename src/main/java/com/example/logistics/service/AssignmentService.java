@@ -1,4 +1,4 @@
-﻿package com.example.logistics.service;
+package com.example.logistics.service;
 
 import com.example.logistics.dto.request.AssignmentRequestDto;
 import com.example.logistics.dto.response.AssignmentResponseDto;
