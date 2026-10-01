@@ -1,17 +1,16 @@
 package com.example.logistics.service.impl;
 
-import com.example.logistics.entity.RouteEstimate;
-import com.example.logistics.entity.TransportCostRule;
-import com.example.logistics.entity.TransportRequest;
 import com.example.logistics.dto.request.CostPreviewRequest;
 import com.example.logistics.dto.response.CostPreviewResponse;
+import com.example.logistics.entity.TransportCostRule;
 import com.example.logistics.exception.BadRequestException;
+import com.example.logistics.exception.ResourceNotFoundException;
 import com.example.logistics.repository.RouteEstimateRepository;
 import com.example.logistics.repository.TransportCostRuleRepository;
 import com.example.logistics.repository.TransportRequestRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
@@ -24,7 +23,7 @@ public class TransportCostService {
     private final ExternalMapService externalMapService;
     private final TransportRequestRepository transportRequestRepository;
 
-    @Transactional
+
     public CostPreviewResponse calculateCostPreview(CostPreviewRequest request) {
 
         if (request.getProductWeight() == null || request.getProductWeight() <= 0) {
@@ -34,10 +33,25 @@ public class TransportCostService {
             throw new BadRequestException("Origin and Destination coordinates are required.");
         }
 
-        double[] routeData = externalMapService.getDistanceAndDuration(
-                request.getOriginLat(), request.getOriginLng(),
-                request.getDestinationLat(), request.getDestinationLng()
-        );
+
+        if (request.getTransportRequestId() != null) {
+            boolean exists = transportRequestRepository.existsById(request.getTransportRequestId());
+            if (!exists) {
+
+                throw new ResourceNotFoundException("Transport Request not found with ID: " + request.getTransportRequestId());
+            }
+        }
+
+        double[] routeData;
+        try {
+            routeData = externalMapService.getDistanceAndDuration(
+                    request.getOriginLat(), request.getOriginLng(),
+                    request.getDestinationLat(), request.getDestinationLng()
+            );
+        } catch (Exception e) {
+
+            throw new RuntimeException("External map service unavailable: " + e.getMessage());
+        }
 
         double actualDistanceKm = routeData[0];
         int estimatedTimeMinutes = (int) Math.round(routeData[1]);
@@ -46,45 +60,30 @@ public class TransportCostService {
             throw new BadRequestException("Could not calculate a valid route distance.");
         }
 
-
-        if (request.getTransportRequestId() != null) {
-            TransportRequest transportRequest = transportRequestRepository.findById(request.getTransportRequestId())
-                    .orElseThrow(() -> new RuntimeException("Transport Request not found"));
-
-
-            transportRequest.setEstimatedDistanceKm(BigDecimal.valueOf(actualDistanceKm));
-            transportRequestRepository.save(transportRequest);
-        }
-
         TransportCostRule rule = costRuleRepository.findByTransporterIdAndIsActiveTrue(request.getTransporterId())
                 .orElseThrow(() -> new BadRequestException("Cost rules are not configured for transporter: " + request.getTransporterId()));
 
+        // 2. NullPointerException (NPE)  Null Checks
+        BigDecimal costPerKm = rule.getCostPerKm() != null ? rule.getCostPerKm() : BigDecimal.ZERO;
+        BigDecimal costPerKg = rule.getCostPerKg() != null ? rule.getCostPerKg() : BigDecimal.ZERO;
+
         // Cost calculate : (Distance * CostPerKm) + (Weight * CostPerKg)
-        BigDecimal distanceCost = rule.getCostPerKm().multiply(BigDecimal.valueOf(actualDistanceKm));
-        BigDecimal weightCost = rule.getCostPerKg().multiply(BigDecimal.valueOf(request.getProductWeight()));
+        BigDecimal distanceCost = costPerKm.multiply(BigDecimal.valueOf(actualDistanceKm));
+        BigDecimal weightCost = costPerKg.multiply(BigDecimal.valueOf(request.getProductWeight()));
 
         // Total cost
         BigDecimal finalCost = distanceCost.add(weightCost);
         finalCost = finalCost.setScale(2, RoundingMode.HALF_UP);
 
-        RouteEstimate estimate = new RouteEstimate();
-        estimate.setEstimatedDistanceKm(actualDistanceKm);
-        estimate.setWeightUsed(request.getProductWeight());
-        estimate.setEstimatedCost(finalCost);
-        estimate.setCostPerKmUsed(rule.getCostPerKm());
-        estimate.setCostPerKgUsed(rule.getCostPerKg());
-        estimate.setTransportRequestId(request.getTransportRequestId());
-
-        RouteEstimate savedEstimate = routeEstimateRepository.save(estimate);
-
         String generatedMapUrl = String.format("https://www.google.com/maps/dir/?api=1&origin=%f,%f&destination=%f,%f",
                 request.getOriginLat(), request.getOriginLng(),
                 request.getDestinationLat(), request.getDestinationLng());
 
+
         return CostPreviewResponse.builder()
-                .routeEstCode(savedEstimate.getRouteEstimateId() != null ? savedEstimate.getRouteEstimateId().toString() : "")
-                .estimatedCost(savedEstimate.getEstimatedCost())
-                .distanceKm(savedEstimate.getEstimatedDistanceKm())
+                .routeEstCode("PREVIEW-ONLY")
+                .estimatedCost(finalCost)
+                .distanceKm(actualDistanceKm)
                 .etaMinutes(estimatedTimeMinutes)
                 .routeMapUrl(generatedMapUrl)
                 .build();
