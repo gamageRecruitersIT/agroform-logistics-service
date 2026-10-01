@@ -2,6 +2,7 @@ package com.example.logistics.listener;
 
 import com.example.logistics.entity.DeliveryStatusEnum;
 import com.example.logistics.event.DeliveryStatusChangedEvent;
+import com.example.logistics.service.VehicleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -19,7 +20,8 @@ import java.util.UUID;
  *   LOADED (first move)        -> transport_task.task_status = IN_PROGRESS
  *   UNLOADED_AT_WAREHOUSE      -> transport_task.task_status = COMPLETED
  *                                 driver_assignment released (driver can take a new task)
- *                                 vehicle.availability_status = AVAILABLE
+ *                                 vehicle freed via VehicleService.releaseVehicleAfterTask(vehicleCode)
+ *                                 (Vasitha's module: ASSIGNED -> AVAILABLE only)
  *                                 transport_request.request_status = COMPLETED
  *
  * This is a stop-gap so the flow works end to end. When Chamuditha (task/driver),
@@ -35,6 +37,7 @@ import java.util.UUID;
 public class TaskLifecycleSyncListener {
 
     private final JdbcTemplate jdbc;
+    private final VehicleService vehicleService;
 
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     public void onStatusChanged(DeliveryStatusChangedEvent event) {
@@ -65,12 +68,7 @@ public class TaskLifecycleSyncListener {
                      WHERE transport_task_id = ? AND is_active = TRUE
                     """, taskId);
 
-            jdbc.update("""
-                    UPDATE vehicle
-                       SET availability_status = 'AVAILABLE'::vehicle_availability_enum
-                     WHERE vehicle_id = (SELECT vehicle_id FROM transport_task WHERE transport_task_id = ?)
-                       AND availability_status = 'ASSIGNED'::vehicle_availability_enum
-                    """, taskId);
+            vehicleService.releaseVehicleAfterTask(event.task().vehicleCode());
 
             jdbc.update("""
                     UPDATE transport_request

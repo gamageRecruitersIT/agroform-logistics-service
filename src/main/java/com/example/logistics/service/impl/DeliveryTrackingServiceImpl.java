@@ -440,6 +440,8 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
     private DeliveryStatusResponse toDeliveryStatusResponse(DeliveryStatus status, TransportTaskRef task) {
         return DeliveryStatusResponse.builder()
                 .transportTaskCode(task.transportTaskCode())
+                .transportRequestCode(task.transportRequestCode())
+                .vehicleCode(task.vehicleCode())
                 .currentStatus(status.getCurrentStatus())
                 .delayed(status.isDelayed())
                 .delayReason(status.getDelayReason())

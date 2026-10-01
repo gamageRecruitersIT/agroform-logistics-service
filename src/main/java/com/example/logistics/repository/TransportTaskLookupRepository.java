@@ -21,18 +21,22 @@ public class TransportTaskLookupRepository {
 
     private static final String BASE_SQL = """
             SELECT t.transport_task_id, t.transport_task_code, t.transport_request_id,
-                   t.transporter_id, t.driver_id, r.farmer_id,
+                   r.transport_request_code,
+                   t.transporter_id, t.driver_id, v.vehicle_code, r.farmer_id,
                    r.request_status::text AS request_status
             FROM transport_task t
             JOIN transport_request r ON r.transport_request_id = t.transport_request_id
+            JOIN vehicle v ON v.vehicle_id = t.vehicle_id
             """;
 
     private static final RowMapper<TransportTaskRef> MAPPER = (rs, i) -> new TransportTaskRef(
             rs.getObject("transport_task_id", UUID.class),
             rs.getString("transport_task_code"),
             rs.getObject("transport_request_id", UUID.class),
+            rs.getString("transport_request_code"),
             rs.getObject("transporter_id", UUID.class),
             rs.getObject("driver_id", UUID.class),
+            rs.getString("vehicle_code"),
             rs.getObject("farmer_id", UUID.class),
             rs.getString("request_status"));
 
