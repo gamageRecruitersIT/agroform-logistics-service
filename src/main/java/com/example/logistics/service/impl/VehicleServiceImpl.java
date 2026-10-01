@@ -1,6 +1,6 @@
 package com.example.logistics.service.impl;
 
-import com.example.logistics.dto.VehicleRegistrationRequestDto;
+import com.example.logistics.dto.request.VehicleRegistrationRequestDto;
 import com.example.logistics.dto.response.VehicleResponseDto;
 import com.example.logistics.entity.Vehicle;
 import com.example.logistics.entity.enums.VehicleAvailability;
@@ -26,11 +26,9 @@ public class VehicleServiceImpl implements VehicleService {
     @Override
     @Transactional
     public VehicleResponseDto registerVehicle(VehicleRegistrationRequestDto requestDto) {
-
         if (vehicleRepository.existsByVehicleNumberPlate(requestDto.getVehicleNumberPlate())) {
             throw new DuplicateResourceException("Vehicle with number plate " + requestDto.getVehicleNumberPlate() + " already exists.");
         }
-
         if (vehicleRepository.existsByEngineNumber(requestDto.getEngineNumber())) {
             throw new DuplicateResourceException("Vehicle with engine number " + requestDto.getEngineNumber() + " already exists.");
         }
@@ -49,48 +47,75 @@ public class VehicleServiceImpl implements VehicleService {
                 .isActive(true)
                 .build();
 
-        Vehicle savedVehicle = vehicleRepository.save(vehicle);
-        return mapToResponseDto(savedVehicle);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public VehicleResponseDto getVehicleById(UUID vehicleId) {
-        Vehicle vehicle = fetchVehicleEntity(vehicleId);
-        return mapToResponseDto(vehicle);
+        return mapToResponseDto(vehicleRepository.save(vehicle));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<VehicleResponseDto> getVehiclesByTransporterId(UUID transporterId) {
-        return vehicleRepository.findByTransporterId(transporterId)
-                .stream()
-                .map(this::mapToResponseDto)
-                .collect(Collectors.toList());
+        return vehicleRepository.findByTransporterId(transporterId).stream()
+                .map(this::mapToResponseDto).collect(Collectors.toList());
+    }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public VehicleResponseDto getVehicleByCode(String vehicleCode) {
+        return mapToResponseDto(fetchVehicleEntity(vehicleCode));
     }
 
     @Override
     @Transactional
-    public VehicleResponseDto updateVehicleAvailability(UUID vehicleId, VehicleAvailability newStatus) {
-        Vehicle vehicle = fetchVehicleEntity(vehicleId);
-
-        vehicle.setAvailabilityStatus(newStatus);
-
-        if (newStatus == VehicleAvailability.INACTIVE) {
-            vehicle.setIsActive(false);
-        } else {
-            vehicle.setIsActive(true);
+    public VehicleResponseDto updateVehicleAvailability(String vehicleCode, VehicleAvailability newStatus) {
+        if (newStatus == VehicleAvailability.ASSIGNED) {
+            throw new IllegalArgumentException("Cannot manually set status to ASSIGNED");
         }
 
-        Vehicle updatedVehicle = vehicleRepository.save(vehicle);
-        return mapToResponseDto(updatedVehicle);
+        Vehicle vehicle = vehicleRepository.findByVehicleCodeForUpdate(vehicleCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found with code: " + vehicleCode));
+
+        if (vehicle.getAvailabilityStatus() == VehicleAvailability.ASSIGNED) {
+            throw new VehicleNotAvailableException("Cannot change status of a currently ASSIGNED vehicle");
+        }
+
+        vehicle.setAvailabilityStatus(newStatus);
+        vehicle.setIsActive(newStatus != VehicleAvailability.INACTIVE);
+
+        return mapToResponseDto(vehicleRepository.save(vehicle));
+    }
+
+    @Override
+    @Transactional
+    public void markVehicleAssigned(String vehicleCode) {
+        Vehicle vehicle = vehicleRepository.findByVehicleCodeForUpdate(vehicleCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found with code: " + vehicleCode));
+
+        ensureAssignable(vehicle);
+
+        vehicle.setAvailabilityStatus(VehicleAvailability.ASSIGNED);
+        vehicleRepository.save(vehicle);
+    }
+
+    @Override
+    @Transactional
+    public void releaseVehicleAfterTask(String vehicleCode) {
+        Vehicle vehicle = vehicleRepository.findByVehicleCodeForUpdate(vehicleCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found with code: " + vehicleCode));
+
+        if (vehicle.getAvailabilityStatus() == VehicleAvailability.ASSIGNED) {
+            vehicle.setAvailabilityStatus(VehicleAvailability.AVAILABLE);
+            vehicleRepository.save(vehicle);
+        }
     }
 
     @Override
     @Transactional(readOnly = true)
-    public void validateVehicleAvailabilityForAssignment(UUID vehicleId) {
-        Vehicle vehicle = fetchVehicleEntity(vehicleId);
+    public void validateVehicleAvailabilityForAssignment(String vehicleCode) {
+        ensureAssignable(fetchVehicleEntity(vehicleCode));
+    }
 
+
+    private void ensureAssignable(Vehicle vehicle) {
         if (!vehicle.getIsActive() || vehicle.getAvailabilityStatus() != VehicleAvailability.AVAILABLE) {
             throw new VehicleNotAvailableException(
                     "Vehicle " + vehicle.getVehicleNumberPlate() + " is currently " + vehicle.getAvailabilityStatus() + " and cannot be assigned."
@@ -98,10 +123,9 @@ public class VehicleServiceImpl implements VehicleService {
         }
     }
 
-
-    private Vehicle fetchVehicleEntity(UUID vehicleId) {
-        return vehicleRepository.findById(vehicleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found with ID: " + vehicleId));
+    private Vehicle fetchVehicleEntity(String vehicleCode) {
+        return vehicleRepository.findByVehicleCode(vehicleCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found with code: " + vehicleCode));
     }
 
     private VehicleResponseDto mapToResponseDto(Vehicle vehicle) {
