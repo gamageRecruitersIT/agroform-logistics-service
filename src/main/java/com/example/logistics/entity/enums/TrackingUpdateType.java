@@ -1,4 +1,4 @@
-package com.example.logistics.entity;
+package com.example.logistics.entity.enums;
 
 /** What kind of row a tracking_update record is. */
 public enum TrackingUpdateType {

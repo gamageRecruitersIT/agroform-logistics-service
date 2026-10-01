@@ -1,7 +1,7 @@
 package com.example.logistics.repository;
 
 import com.example.logistics.entity.TrackingUpdate;
-import com.example.logistics.entity.TrackingUpdateType;
+import com.example.logistics.entity.enums.TrackingUpdateType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

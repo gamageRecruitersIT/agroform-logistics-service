@@ -1,6 +1,6 @@
 package com.example.logistics.listener;
 
-import com.example.logistics.entity.DeliveryStatusEnum;
+import com.example.logistics.entity.enums.DeliveryStatusEnum;
 import com.example.logistics.event.DeliveryStatusChangedEvent;
 import com.example.logistics.service.VehicleService;
 import lombok.RequiredArgsConstructor;

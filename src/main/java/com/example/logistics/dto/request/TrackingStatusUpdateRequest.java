@@ -1,6 +1,6 @@
 package com.example.logistics.dto.request;
 
-import com.example.logistics.entity.DeliveryStatusEnum;
+import com.example.logistics.entity.enums.DeliveryStatusEnum;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;

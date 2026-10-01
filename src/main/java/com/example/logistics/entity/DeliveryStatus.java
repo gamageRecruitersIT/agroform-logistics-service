@@ -1,5 +1,6 @@
 package com.example.logistics.entity;
 
+import com.example.logistics.entity.enums.DeliveryStatusEnum;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;

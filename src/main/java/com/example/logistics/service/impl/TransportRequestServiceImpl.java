@@ -4,7 +4,7 @@ import com.example.logistics.dto.request.TransportRequestCreateDto;
 import com.example.logistics.dto.response.ApiResponse;
 import com.example.logistics.dto.response.TransportRequestResponseDto;
 import com.example.logistics.entity.TransportRequest;
-import com.example.logistics.entity.TransportRequestStatusEnum;
+import com.example.logistics.entity.enums.TransportRequestStatusEnum;
 import com.example.logistics.exception.BadRequestException;
 import com.example.logistics.exception.DuplicateResourceException;
 import com.example.logistics.exception.ResourceNotFoundException;

@@ -1,6 +1,6 @@
 package com.example.logistics.event;
 
-import com.example.logistics.entity.DeliveryStatusEnum;
+import com.example.logistics.entity.enums.DeliveryStatusEnum;
 import com.example.logistics.repository.TransportTaskRef;
 
 import java.time.OffsetDateTime;
