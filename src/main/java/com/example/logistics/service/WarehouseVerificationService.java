@@ -39,7 +39,7 @@ public class WarehouseVerificationService {
      * @param transportTaskCode human-readable task code (e.g. TTK-XXXX)
      * @param warehouseId       UUID of the destination warehouse
      * @param deliveryStatus    DELIVERED or UNLOADED_AT_WAREHOUSE (enum)
-     * @return the acknowledgement status from the Warehouse Service, or null if the call failed
+     * @return the acknowledgement status string from Warehouse Service, or null if the call failed
      */
     public String notifyWarehouse(
             UUID               transportTaskId,
@@ -64,7 +64,8 @@ public class WarehouseVerificationService {
                     warehouseServiceFeignClient.notifyDeliveryArrival(request);
 
             String ack = response != null ? response.getAcknowledgementStatus() : null;
-            log.info("[WarehouseVerification] Warehouse acknowledged task={} ack={}", transportTaskCode, ack);
+            log.info("[WarehouseVerification] Warehouse acknowledged task={} ack={}",
+                    transportTaskCode, ack);
             return ack != null ? ack : "ACKNOWLEDGED";
 
         } catch (FeignException ex) {
@@ -84,16 +85,7 @@ public class WarehouseVerificationService {
         }
     }
 
-    /**
-     * Called by WarehouseVerificationController when Warehouse Service re-confirms a delivery.
-     *
-     * <p>The re-confirmation does NOT change the delivery status in Logistics — the status was
-     * already moved by the driver. Instead, it appends a WAREHOUSE_ACK audit entry via
-     * {@link DeliveryTrackingService#recordWarehouseAcknowledgement} so Dilum's listener can
-     * store it.
-     *
-     * <p>Only DELIVERED and UNLOADED_AT_WAREHOUSE are accepted as confirmedStatus values.
-     */
+    /** Called by WarehouseVerificationController when Warehouse Service re-confirms a delivery. */
     public WarehouseReConfirmResponse handleWarehouseReConfirmation(
             WarehouseReConfirmRequest request
     ) {
@@ -125,18 +117,22 @@ public class WarehouseVerificationService {
             );
         }
 
-        // ── Record warehouse acknowledgement via DeliveryTrackingService ──────
-        // This appends a WAREHOUSE_ACK history row; it does NOT move the delivery status.
+        // ── Confirm delivery status via DeliveryTrackingService ──────────────
+        // confirmStatusFromWarehouse moves the status forward if not yet reached,
+        // or returns false (no-op) if already at or past the confirmed value.
         try {
             String notes = request.getNotes() != null
                     ? "Re-confirmed by Warehouse Service: " + request.getNotes()
                     : "Re-confirmed by Warehouse Service";
 
-            deliveryTrackingService.recordWarehouseAcknowledgement(taskId, notes);
-
-            log.info("[WarehouseVerification] Warehouse acknowledgement recorded for task={} confirmedStatus={}",
-                    taskId, confirmedStatus);
-            return WarehouseReConfirmResponse.accepted(taskId, confirmedString);
+            boolean moved = deliveryTrackingService.confirmStatusFromWarehouse(taskId, confirmedStatus, notes);
+            if (moved) {
+                log.info("[WarehouseVerification] Delivery status synced for task={} to {}",
+                        taskId, confirmedStatus);
+                return WarehouseReConfirmResponse.accepted(taskId, confirmedString);
+            }
+            log.info("[WarehouseVerification] Status already at or past confirmed value for task={}", taskId);
+            return WarehouseReConfirmResponse.alreadyConfirmed(taskId, confirmedString);
 
         } catch (ResourceNotFoundException ex) {
             log.error("[WarehouseVerification] Transport task not found for re-confirmation: task={}",

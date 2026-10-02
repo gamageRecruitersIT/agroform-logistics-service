@@ -1,5 +1,6 @@
 package com.example.logistics.entity;
 
+import com.example.logistics.entity.enums.TrackingUpdateType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -44,6 +45,10 @@ public class TrackingUpdate {
     @Column(name = "new_status", nullable = false, columnDefinition = "delivery_status_enum")
     private DeliveryStatusEnum newStatus;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "update_type", nullable = false, length = 30)
+    private TrackingUpdateType updateType;
+
     /**
      * Snapshot of the delay flag at the moment this row was recorded.
      * A row can represent a pure delay flag/resolve event when previousStatus == newStatus.
@@ -73,6 +78,9 @@ public class TrackingUpdate {
     protected void onCreate() {
         if (this.recordedAt == null) {
             this.recordedAt = OffsetDateTime.now();
+        }
+        if (this.updateType == null) {
+            this.updateType = TrackingUpdateType.STATUS_CHANGE;
         }
     }
 }

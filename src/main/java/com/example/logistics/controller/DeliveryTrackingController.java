@@ -1,10 +1,12 @@
 package com.example.logistics.controller;
 
 import com.example.logistics.dto.request.DelayFlagRequest;
+import com.example.logistics.dto.request.LocationUpdateRequest;
 import com.example.logistics.dto.request.TrackingStatusUpdateRequest;
 import com.example.logistics.dto.response.ApiResponse;
 import com.example.logistics.dto.response.DeliveryStatusResponse;
 import com.example.logistics.dto.response.TrackingUpdateResponse;
+import com.example.logistics.security.CurrentUser;
 import com.example.logistics.service.DeliveryTrackingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -13,21 +15,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Delivery Status & Tracking APIs.
  * Base path: /api/v1/logistics/tracking
  * Owner: Dilum.
  *
- * Notes for the rest of the team:
- * - initializeTracking is meant to be called from Chamuditha's assignment flow
- *   right after a transport_task row is created.
- * - Every status change and every delay flag/resolve is logged as an immutable
- *   tracking_update row, so Gayani's LogisticsEvent/Kafka publishing and Navodya's
- *   notification Feign client can react to it.
- * - Role checks (DRIVER may submit, TRANSPORTER may override) are enforced by
- *   Navodya's authorization module upstream of these endpoints.
+ * Tasks are addressed by their public code (transport_task_code, e.g. TTK-AB12CD34);
+ * internal UUIDs are never exposed. The caller (id + role) comes from the gateway-forwarded
+ * identity, see CurrentUserArgumentResolver. All authorization decisions live in the service layer.
+ *
+ * Roles:
+ *   DRIVER      - submit status updates / live location / delay flag (own tasks)
+ *   TRANSPORTER - initialize tracking, override status, flag/resolve delay (own tasks)
+ *   FARMER      - read-only (own tasks)
  */
 @RestController
 @RequestMapping("/api/v1/logistics/tracking")
@@ -36,49 +37,78 @@ public class DeliveryTrackingController {
 
     private final DeliveryTrackingService deliveryTrackingService;
 
-    @PostMapping("/{transportTaskId}/init")
+    @PostMapping("/{taskCode}/init")
     public ResponseEntity<ApiResponse<DeliveryStatusResponse>> initializeTracking(
-            @PathVariable UUID transportTaskId) {
-        DeliveryStatusResponse response = deliveryTrackingService.initializeTracking(transportTaskId);
+            @PathVariable String taskCode, CurrentUser user) {
+        DeliveryStatusResponse response = deliveryTrackingService.initializeTracking(taskCode, user);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Delivery tracking initialized", response));
     }
 
-    @GetMapping("/{transportTaskId}")
+    @GetMapping("/my-tasks")
+    public ResponseEntity<ApiResponse<List<DeliveryStatusResponse>>> getMyTasks(CurrentUser user) {
+        List<DeliveryStatusResponse> response = deliveryTrackingService.getMyTasks(user);
+        return ResponseEntity.ok(ApiResponse.success("Delivery statuses retrieved", response));
+    }
+
+    @GetMapping("/{taskCode}")
     public ResponseEntity<ApiResponse<DeliveryStatusResponse>> getCurrentStatus(
-            @PathVariable UUID transportTaskId) {
-        DeliveryStatusResponse response = deliveryTrackingService.getCurrentStatus(transportTaskId);
+            @PathVariable String taskCode, CurrentUser user) {
+        DeliveryStatusResponse response = deliveryTrackingService.getCurrentStatus(taskCode, user);
         return ResponseEntity.ok(ApiResponse.success("Current delivery status retrieved", response));
     }
 
-    @GetMapping("/{transportTaskId}/history")
+    @GetMapping("/{taskCode}/history")
     public ResponseEntity<ApiResponse<List<TrackingUpdateResponse>>> getHistory(
-            @PathVariable UUID transportTaskId) {
-        List<TrackingUpdateResponse> response = deliveryTrackingService.getHistory(transportTaskId);
+            @PathVariable String taskCode,
+            @RequestParam(defaultValue = "false") boolean includeLocations,
+            CurrentUser user) {
+        List<TrackingUpdateResponse> response =
+                deliveryTrackingService.getHistory(taskCode, includeLocations, user);
         return ResponseEntity.ok(ApiResponse.success("Tracking history retrieved", response));
     }
 
-    @PatchMapping("/{transportTaskId}/status")
+    @GetMapping("/{taskCode}/location/latest")
+    public ResponseEntity<ApiResponse<TrackingUpdateResponse>> getLatestLocation(
+            @PathVariable String taskCode, CurrentUser user) {
+        TrackingUpdateResponse response = deliveryTrackingService.getLatestLocation(taskCode, user);
+        return ResponseEntity.ok(ApiResponse.success("Latest location retrieved", response));
+    }
+
+    @PostMapping("/{taskCode}/location")
+    public ResponseEntity<ApiResponse<TrackingUpdateResponse>> submitLocation(
+            @PathVariable String taskCode,
+            @Valid @RequestBody LocationUpdateRequest request,
+            CurrentUser user) {
+        TrackingUpdateResponse response = deliveryTrackingService.submitLocation(taskCode, request, user);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Location recorded", response));
+    }
+
+    @PatchMapping("/{taskCode}/status")
     public ResponseEntity<ApiResponse<DeliveryStatusResponse>> updateStatus(
-            @PathVariable UUID transportTaskId,
-            @Valid @RequestBody TrackingStatusUpdateRequest request) {
-        DeliveryStatusResponse response = deliveryTrackingService.updateStatus(transportTaskId, request);
+            @PathVariable String taskCode,
+            @Valid @RequestBody TrackingStatusUpdateRequest request,
+            CurrentUser user) {
+        DeliveryStatusResponse response = deliveryTrackingService.updateStatus(taskCode, request, user);
         return ResponseEntity.ok(ApiResponse.success("Delivery status updated", response));
     }
 
-    @PostMapping("/{transportTaskId}/delay")
+    @PostMapping("/{taskCode}/delay")
     public ResponseEntity<ApiResponse<DeliveryStatusResponse>> flagDelay(
-            @PathVariable UUID transportTaskId,
-            @Valid @RequestBody DelayFlagRequest request) {
-        DeliveryStatusResponse response = deliveryTrackingService.flagDelay(transportTaskId, request);
+            @PathVariable String taskCode,
+            @Valid @RequestBody DelayFlagRequest request,
+            CurrentUser user) {
+        DeliveryStatusResponse response = deliveryTrackingService.flagDelay(taskCode, request, user);
         return ResponseEntity.ok(ApiResponse.success("Delivery flagged as delayed", response));
     }
 
-    @PostMapping("/{transportTaskId}/delay/resolve")
+    @PostMapping("/{taskCode}/delay/resolve")
     public ResponseEntity<ApiResponse<DeliveryStatusResponse>> resolveDelay(
-            @PathVariable UUID transportTaskId,
-            @Valid @RequestBody DelayFlagRequest request) {
-        DeliveryStatusResponse response = deliveryTrackingService.resolveDelay(transportTaskId, request);
+            @PathVariable String taskCode,
+            @Valid @RequestBody DelayFlagRequest request,
+            CurrentUser user) {
+        DeliveryStatusResponse response = deliveryTrackingService.resolveDelay(taskCode, request, user);
         return ResponseEntity.ok(ApiResponse.success("Delay resolved", response));
     }
 }

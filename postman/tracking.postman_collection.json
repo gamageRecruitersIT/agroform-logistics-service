@@ -1,0 +1,582 @@
+{
+  "info": {
+    "name": "Logistics - Delivery Tracking (Dilum)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8083"
+    },
+    {
+      "key": "taskCode",
+      "value": "TTK-XXXXXXXX"
+    },
+    {
+      "key": "driverId",
+      "value": "00000000-0000-0000-0000-000000000000"
+    },
+    {
+      "key": "transporterId",
+      "value": "00000000-0000-0000-0000-000000000000"
+    },
+    {
+      "key": "farmerId",
+      "value": "00000000-0000-0000-0000-000000000000"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Init tracking (TRANSPORTER)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{transporterId}}"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "TRANSPORTER"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/init",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "logistics",
+            "tracking",
+            "{{taskCode}}",
+            "init"
+          ]
+        }
+      }
+    },
+    {
+      "name": "2. My tasks (DRIVER)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{driverId}}"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "DRIVER"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/logistics/tracking/my-tasks",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "logistics",
+            "tracking",
+            "my-tasks"
+          ]
+        }
+      }
+    },
+    {
+      "name": "3. Current status (FARMER)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{farmerId}}"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "FARMER"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "logistics",
+            "tracking",
+            "{{taskCode}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "4. Submit location (DRIVER)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{driverId}}"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "DRIVER"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/location",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "logistics",
+            "tracking",
+            "{{taskCode}}",
+            "location"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"latitude\": 6.9271,\n  \"longitude\": 79.8612,\n  \"notes\": \"On the way to farm\"\n}"
+        }
+      }
+    },
+    {
+      "name": "5. Status -> LOADED (DRIVER)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{driverId}}"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "DRIVER"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "logistics",
+            "tracking",
+            "{{taskCode}}",
+            "status"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"newStatus\": \"LOADED\",\n  \"latitude\": 7.2906,\n  \"longitude\": 80.6337,\n  \"notes\": \"Loaded at farm\"\n}"
+        }
+      }
+    },
+    {
+      "name": "6. Status -> IN_TRANSIT (DRIVER)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{driverId}}"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "DRIVER"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "logistics",
+            "tracking",
+            "{{taskCode}}",
+            "status"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"newStatus\": \"IN_TRANSIT\"\n}"
+        }
+      }
+    },
+    {
+      "name": "7. Skip step -> expect 400 (DRIVER)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{driverId}}"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "DRIVER"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "logistics",
+            "tracking",
+            "{{taskCode}}",
+            "status"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"newStatus\": \"UNLOADED_AT_WAREHOUSE\"\n}"
+        }
+      }
+    },
+    {
+      "name": "8. Flag delay (DRIVER)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{driverId}}"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "DRIVER"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/delay",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "logistics",
+            "tracking",
+            "{{taskCode}}",
+            "delay"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reason\": \"Heavy traffic\"\n}"
+        }
+      }
+    },
+    {
+      "name": "9. Resolve delay (TRANSPORTER)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{transporterId}}"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "TRANSPORTER"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/delay/resolve",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "logistics",
+            "tracking",
+            "{{taskCode}}",
+            "delay",
+            "resolve"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reason\": \"Traffic cleared\"\n}"
+        }
+      }
+    },
+    {
+      "name": "10. Status -> DELIVERED (DRIVER)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{driverId}}"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "DRIVER"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "logistics",
+            "tracking",
+            "{{taskCode}}",
+            "status"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"newStatus\": \"DELIVERED\"\n}"
+        }
+      }
+    },
+    {
+      "name": "11. Status -> UNLOADED_AT_WAREHOUSE (DRIVER)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{driverId}}"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "DRIVER"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "logistics",
+            "tracking",
+            "{{taskCode}}",
+            "status"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"newStatus\": \"UNLOADED_AT_WAREHOUSE\"\n}"
+        }
+      }
+    },
+    {
+      "name": "12. Override backward (TRANSPORTER)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{transporterId}}"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "TRANSPORTER"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "logistics",
+            "tracking",
+            "{{taskCode}}",
+            "status"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"newStatus\": \"LOADED\",\n  \"authorizedOverride\": true,\n  \"notes\": \"Correction\"\n}"
+        }
+      }
+    },
+    {
+      "name": "13. History (FARMER)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{farmerId}}"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "FARMER"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/history",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "logistics",
+            "tracking",
+            "{{taskCode}}",
+            "history"
+          ]
+        }
+      }
+    },
+    {
+      "name": "14. History incl. GPS pings (TRANSPORTER)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{transporterId}}"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "TRANSPORTER"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/history?includeLocations=true",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "logistics",
+            "tracking",
+            "{{taskCode}}",
+            "history"
+          ],
+          "query": [
+            {
+              "key": "includeLocations",
+              "value": "true"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "15. Latest location (FARMER)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-User-Id",
+            "value": "{{farmerId}}"
+          },
+          {
+            "key": "X-User-Role",
+            "value": "FARMER"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/location/latest",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "logistics",
+            "tracking",
+            "{{taskCode}}",
+            "location",
+            "latest"
+          ]
+        }
+      }
+    }
+  ]
+}

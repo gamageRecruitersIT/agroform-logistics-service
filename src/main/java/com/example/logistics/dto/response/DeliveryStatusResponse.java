@@ -13,7 +13,12 @@ import java.util.UUID;
 @Builder
 public class DeliveryStatusResponse {
 
-    private UUID transportTaskId;
+    /** Public code (e.g. TTK-AB12CD34). Internal UUIDs are never exposed. */
+    private String transportTaskCode;
+    /** Public code of the parent transport request (e.g. TRQ-AB12CD34), so the farmer can link request -> tracking. */
+    private String transportRequestCode;
+    /** Public vehicle code (e.g. VHC-AB12CD34) of the vehicle doing this delivery. */
+    private String vehicleCode;
     private DeliveryStatusEnum currentStatus;
     private boolean delayed;
     private String delayReason;
