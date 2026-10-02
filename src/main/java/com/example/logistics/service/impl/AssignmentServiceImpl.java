@@ -9,7 +9,6 @@ import com.example.logistics.entity.TransportTask;
 import com.example.logistics.entity.Vehicle;
 import com.example.logistics.entity.enums.TransportRequestStatusEnum;
 import com.example.logistics.entity.enums.TransportTaskStatus;
-import com.example.logistics.entity.enums.VehicleAvailability;
 import com.example.logistics.exception.BadRequestException;
 import com.example.logistics.exception.DriverAlreadyAssignedException;
 import com.example.logistics.exception.ResourceNotFoundException;
@@ -19,6 +18,7 @@ import com.example.logistics.repository.TransportTaskRepository;
 import com.example.logistics.repository.VehicleRepository;
 import com.example.logistics.service.AssignmentService;
 import com.example.logistics.service.DeliveryTrackingService;
+import com.example.logistics.service.LogisticsWorkflowService;
 import com.example.logistics.service.VehicleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +41,7 @@ public class AssignmentServiceImpl implements AssignmentService {
     private final VehicleRepository vehicleRepository;
     private final VehicleService vehicleService;           // Vasitha's service
     private final DeliveryTrackingService deliveryTrackingService; // Dilum's service
+        private final LogisticsWorkflowService logisticsWorkflowService;
 
     @Override
     @Transactional
@@ -74,13 +75,12 @@ public class AssignmentServiceImpl implements AssignmentService {
                     "Driver " + dto.getDriverId() + " is already assigned to an active task.");
         }
 
-        // Step 4: Validate vehicle is AVAILABLE (throws VehicleNotAvailableException if not)
+        // Step 4+5: Validate vehicle is AVAILABLE and reserve it atomically (row-locked)
+        // markVehicleAssigned validates, throws VehicleNotAvailableException if not AVAILABLE,
+        // then sets ASSIGNED — Vasitha's service rejects setting ASSIGNED via updateVehicleAvailability directly.
         Vehicle vehicle = vehicleRepository.findById(dto.getVehicleId())
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + dto.getVehicleId()));
-        vehicleService.validateVehicleAvailabilityForAssignment(vehicle.getVehicleCode());
-
-        // Step 5: Reserve vehicle — flip status to ASSIGNED
-        vehicleService.updateVehicleAvailability(vehicle.getVehicleCode(), VehicleAvailability.ASSIGNED);
+        vehicleService.markVehicleAssigned(vehicle.getVehicleCode());
 
         // Step 6: Generate task code
         String taskCode = "TTK-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
@@ -96,7 +96,7 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .taskStatus(TransportTaskStatus.ASSIGNED)
                 .build();
 
-        TransportTask savedTask = transportTaskRepository.save(task);
+        TransportTask savedTask = transportTaskRepository.saveAndFlush(task); // flush before Dilum's initializeTracking FK lookup
 
         // Step 8: Create DriverAssignment record
         DriverAssignment assignment = DriverAssignment.builder()
@@ -113,7 +113,20 @@ public class AssignmentServiceImpl implements AssignmentService {
         // Step 9: Initialize DeliveryStatus (AWAITING_PICKUP) — Dilum's service
         deliveryTrackingService.initializeTracking(savedTask.getTransportTaskId());
 
-        // Step 10: TODO (Gayani) — Publish DRIVER_ASSIGNED + VEHICLE_ASSIGNED Kafka events
+        // Record audit events; Kafka publishing occurs after the transaction commits.
+        String createdBy = transporterId.toString();
+        logisticsWorkflowService.onVehicleAssigned(
+                request.getTransportRequestCode(),
+                savedTask.getTransportTaskCode(),
+                vehicle.getVehicleCode(),
+                createdBy
+        );
+        logisticsWorkflowService.onDriverAssigned(
+                request.getTransportRequestCode(),
+                savedTask.getTransportTaskCode(),
+                vehicle.getVehicleCode(),
+                createdBy
+        );
 
         log.info("Assignment complete. Task: {}, Assignment: {}",
                 savedTask.getTransportTaskCode(), savedAssignment.getAssignmentId());

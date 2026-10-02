@@ -12,6 +12,7 @@ import com.example.logistics.feign.client.OrderPaymentServiceClient;
 import com.example.logistics.feign.dto.OrderSummaryDto;
 import com.example.logistics.repository.TransportRequestRepository;
 import com.example.logistics.service.TransportRequestService;
+import com.example.logistics.service.LogisticsWorkflowService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class TransportRequestServiceImpl implements TransportRequestService {
 
     private final TransportRequestRepository transportRequestRepository;
     private final OrderPaymentServiceClient orderPaymentServiceClient;
+    private final LogisticsWorkflowService logisticsWorkflowService;
 
     @Override
     @Transactional
@@ -74,7 +76,10 @@ public class TransportRequestServiceImpl implements TransportRequestService {
         // 4. Save Entity to Database
         TransportRequest savedRequest = transportRequestRepository.save(transportRequest);
 
-        // 5. TODO: Call Gayani's LogisticsEventPublisher here to publish TRANSPORT_REQUEST_CREATED event
+        logisticsWorkflowService.onTransportRequestCreated(
+            savedRequest.getTransportRequestCode(),
+            farmerId.toString()
+        );
 
         return mapToResponseDto(savedRequest);
     }
@@ -94,6 +99,7 @@ public class TransportRequestServiceImpl implements TransportRequestService {
         TransportRequest request = transportRequestRepository.findByTransportRequestCode(requestCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Transport request not found with code: " + requestCode));
 
+        TransportRequestStatusEnum previousStatus = request.getRequestStatus();
         try {
             TransportRequestStatusEnum statusEnum = TransportRequestStatusEnum.valueOf(newStatus.toUpperCase());
             request.setRequestStatus(statusEnum);
@@ -103,7 +109,15 @@ public class TransportRequestServiceImpl implements TransportRequestService {
 
         TransportRequest updatedRequest = transportRequestRepository.save(request);
 
-        // TODO: Publish event for status update via Gayani's event module
+        if (previousStatus != TransportRequestStatusEnum.CANCELLED
+            && updatedRequest.getRequestStatus() == TransportRequestStatusEnum.CANCELLED) {
+            logisticsWorkflowService.onTransportCancelled(
+                updatedRequest.getTransportRequestCode(),
+                null,
+                null,
+                null
+            );
+        }
 
         return mapToResponseDto(updatedRequest);
     }
