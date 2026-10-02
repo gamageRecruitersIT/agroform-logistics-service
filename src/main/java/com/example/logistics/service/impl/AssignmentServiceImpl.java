@@ -38,8 +38,8 @@ public class AssignmentServiceImpl implements AssignmentService {
     private final DriverAssignmentRepository driverAssignmentRepository;
     private final TransportRequestRepository transportRequestRepository;
     private final VehicleRepository vehicleRepository;
-    private final VehicleService vehicleService;           // Vasitha's service
-    private final DeliveryTrackingService deliveryTrackingService; // Dilum's service
+    private final VehicleService vehicleService;
+    private final DeliveryTrackingService deliveryTrackingService;
 
     @Override
     @Transactional
@@ -73,12 +73,14 @@ public class AssignmentServiceImpl implements AssignmentService {
                     "Driver " + dto.getDriverId() + " is already assigned to an active task.");
         }
 
-        // Step 4: Validate vehicle is AVAILABLE (throws VehicleNotAvailableException if not)
+        // Step 4: Validate vehicle exists
         Vehicle vehicle = vehicleRepository.findById(dto.getVehicleId())
-                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + dto.getVehicleId()));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Vehicle not found: " + dto.getVehicleId()));
 
-        // Step 5: Reserve vehicle - validates AVAILABLE (throws VehicleNotAvailableException) and sets ASSIGNED.
-        // (updateVehicleAvailability(.., ASSIGNED) is rejected by Vasitha's service on purpose.)
+        // Step 5: Reserve vehicle.
+        // markVehicleAssigned validates that the vehicle is AVAILABLE
+        // and changes its status to ASSIGNED.
         vehicleService.markVehicleAssigned(vehicle.getVehicleCode());
 
         // Step 6: Generate task code
@@ -95,7 +97,8 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .taskStatus(TransportTaskStatus.ASSIGNED)
                 .build();
 
-        // saveAndFlush: Dilum's initializeTracking below reads the task row with raw SQL
+        // Flush before initializeTracking so the tracking service can
+        // immediately find the newly-created task.
         TransportTask savedTask = transportTaskRepository.saveAndFlush(task);
 
         // Step 8: Create DriverAssignment record
@@ -110,10 +113,10 @@ public class AssignmentServiceImpl implements AssignmentService {
 
         DriverAssignment savedAssignment = driverAssignmentRepository.save(assignment);
 
-        // Step 9: Initialize DeliveryStatus (AWAITING_PICKUP) — Dilum's service
+        // Step 9: Initialize DeliveryStatus (AWAITING_PICKUP)
         deliveryTrackingService.initializeTracking(savedTask.getTransportTaskId());
 
-        // Step 10: TODO (Gayani) — Publish DRIVER_ASSIGNED + VEHICLE_ASSIGNED Kafka events
+        // Step 10: TODO (Gayani) - Publish DRIVER_ASSIGNED + VEHICLE_ASSIGNED Kafka events
 
         log.info("Assignment complete. Task: {}, Assignment: {}",
                 savedTask.getTransportTaskCode(), savedAssignment.getAssignmentId());
@@ -186,9 +189,12 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .collect(Collectors.toList());
     }
 
-    // ─── Mapping Helpers ────────────────────────────────────────────────────────
+    // Mapping Helpers
 
-    private AssignmentResponseDto mapToAssignmentResponse(DriverAssignment assignment, TransportTask task) {
+    private AssignmentResponseDto mapToAssignmentResponse(
+            DriverAssignment assignment,
+            TransportTask task) {
+
         return AssignmentResponseDto.builder()
                 .assignmentId(assignment.getAssignmentId())
                 .transportTaskCode(task != null ? task.getTransportTaskCode() : null)
