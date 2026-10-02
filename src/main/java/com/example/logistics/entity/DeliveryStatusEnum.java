@@ -1,4 +1,4 @@
-package com.example.logistics.entity.enums;
+package com.example.logistics.entity;
 
 /**
  * Delivery lifecycle stages for a transport task, per FR-13.

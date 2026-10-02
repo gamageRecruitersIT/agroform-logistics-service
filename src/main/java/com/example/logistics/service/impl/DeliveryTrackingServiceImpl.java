@@ -6,7 +6,7 @@ import com.example.logistics.dto.request.TrackingStatusUpdateRequest;
 import com.example.logistics.dto.response.DeliveryStatusResponse;
 import com.example.logistics.dto.response.TrackingUpdateResponse;
 import com.example.logistics.entity.DeliveryStatus;
-import com.example.logistics.entity.enums.DeliveryStatusEnum;
+import com.example.logistics.entity.DeliveryStatusEnum;
 import com.example.logistics.entity.TrackingUpdate;
 import com.example.logistics.entity.enums.TrackingUpdateType;
 import com.example.logistics.event.DeliveryDelayResolvedEvent;
@@ -76,6 +76,56 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
                 .notes(notes)
                 .build());
         log.info("Warehouse acknowledgement recorded for transport task {}", transportTaskId);
+    }
+
+    @Override
+    @Transactional
+    public boolean confirmStatusFromWarehouse(UUID transportTaskId, DeliveryStatusEnum confirmedStatus, String notes) {
+        if (confirmedStatus != DeliveryStatusEnum.DELIVERED
+                && confirmedStatus != DeliveryStatusEnum.UNLOADED_AT_WAREHOUSE) {
+            throw new BadRequestException(
+                    "Warehouse can only confirm DELIVERED or UNLOADED_AT_WAREHOUSE, got " + confirmedStatus);
+        }
+        TransportTaskRef task = taskLookup.findById(transportTaskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Transport task not found: " + transportTaskId));
+        DeliveryStatus status = findStatusForUpdate(task);
+        DeliveryStatusEnum previous = status.getCurrentStatus();
+
+        if (!previous.isBackwardOrSameAs(confirmedStatus)) {
+            // task is already past (or at) the confirmed status - nothing to do
+            return false;
+        }
+        if (!previous.isValidForwardStepTo(confirmedStatus)) {
+            throw new InvalidDeliveryStatusException(
+                    "Cannot skip delivery status from " + previous + " to " + confirmedStatus
+                            + "; status must progress one step at a time");
+        }
+
+        status.setCurrentStatus(confirmedStatus);
+        status.setUpdatedBy(null);
+        if (notes != null) {
+            status.setNotes(notes);
+        }
+        status = deliveryStatusRepository.save(status);
+
+        trackingUpdateRepository.save(TrackingUpdate.builder()
+                .transportTaskId(task.transportTaskId())
+                .updateType(TrackingUpdateType.STATUS_CHANGE)
+                .previousStatus(previous)
+                .newStatus(confirmedStatus)
+                .delayed(status.isDelayed())
+                .delayReason(status.getDelayReason())
+                .notes(notes)
+                .build());
+
+        log.info("Transport task {} delivery status: {} -> {} (confirmed by Warehouse Service)",
+                task.transportTaskCode(), previous, confirmedStatus);
+
+        // updatedBy == null marks a system/warehouse-initiated change (the warehouse listener skips these)
+        eventPublisher.publishEvent(new DeliveryStatusChangedEvent(
+                task, previous, confirmedStatus, status.isDelayed(), null,
+                null, null, notes, OffsetDateTime.now()));
+        return true;
     }
 
     // ==================================================================

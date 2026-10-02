@@ -15,6 +15,7 @@ public record TransportTaskRef(
         UUID transporterId,
         UUID driverId,
         String vehicleCode,
+        UUID warehouseId,
         UUID farmerId,
         String requestStatus) {
 

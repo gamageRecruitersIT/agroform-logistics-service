@@ -1,6 +1,5 @@
 package com.example.logistics.entity;
 
-import com.example.logistics.entity.enums.DeliveryStatusEnum;
 import com.example.logistics.entity.enums.TrackingUpdateType;
 import jakarta.persistence.*;
 import lombok.*;

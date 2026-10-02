@@ -5,6 +5,7 @@ import com.example.logistics.dto.request.LocationUpdateRequest;
 import com.example.logistics.dto.request.TrackingStatusUpdateRequest;
 import com.example.logistics.dto.response.DeliveryStatusResponse;
 import com.example.logistics.dto.response.TrackingUpdateResponse;
+import com.example.logistics.entity.DeliveryStatusEnum;
 import com.example.logistics.security.CurrentUser;
 
 import java.util.List;
@@ -28,6 +29,17 @@ public interface DeliveryTrackingService {
      * Appends a WAREHOUSE_ACK history row; never changes the delivery status itself.
      */
     void recordWarehouseAcknowledgement(UUID transportTaskId, String notes);
+
+    /**
+     * Dilsha calls this when the Warehouse Service re-confirms a delivery (system-initiated, no user).
+     * Only DELIVERED / UNLOADED_AT_WAREHOUSE are accepted (BadRequestException otherwise).
+     *
+     * @return true  if the status was moved forward by exactly one step,
+     *         false if the task is already at or past confirmedStatus (nothing changed).
+     * @throws com.example.logistics.exception.InvalidDeliveryStatusException if confirmedStatus would skip a step
+     * @throws com.example.logistics.exception.ResourceNotFoundException      if the task has no tracking
+     */
+    boolean confirmStatusFromWarehouse(UUID transportTaskId, DeliveryStatusEnum confirmedStatus, String notes);
 
     // ------------------------------------------------------------------
     // API methods - task addressed by public transport_task_code, caller checked

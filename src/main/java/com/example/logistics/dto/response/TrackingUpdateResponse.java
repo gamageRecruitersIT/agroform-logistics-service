@@ -1,6 +1,6 @@
 package com.example.logistics.dto.response;
 
-import com.example.logistics.entity.enums.DeliveryStatusEnum;
+import com.example.logistics.entity.DeliveryStatusEnum;
 import com.example.logistics.entity.enums.TrackingUpdateType;
 import lombok.*;
 
