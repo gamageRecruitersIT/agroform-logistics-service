@@ -1,11 +1,9 @@
 package com.example.logistics.service;
 
-import com.example.logistics.dto.request.TrackingStatusUpdateRequest;
 import com.example.logistics.dto.request.WarehouseReConfirmRequest;
 import com.example.logistics.dto.response.WarehouseReConfirmResponse;
 import com.example.logistics.entity.DeliveryStatusEnum;
 import com.example.logistics.exception.ExternalServiceException;
-import com.example.logistics.exception.InvalidDeliveryStatusException;
 import com.example.logistics.exception.ResourceNotFoundException;
 import com.example.logistics.feign.client.WarehouseServiceFeignClient;
 import com.example.logistics.feign.dto.WarehouseDeliveryNotificationRequest;
@@ -41,8 +39,9 @@ public class WarehouseVerificationService {
      * @param transportTaskCode human-readable task code (e.g. TTK-XXXX)
      * @param warehouseId       UUID of the destination warehouse
      * @param deliveryStatus    DELIVERED or UNLOADED_AT_WAREHOUSE (enum)
+     * @return the acknowledgement status from the Warehouse Service, or null if the call failed
      */
-    public void notifyWarehouse(
+    public String notifyWarehouse(
             UUID               transportTaskId,
             String             transportTaskCode,
             UUID               warehouseId,
@@ -64,10 +63,9 @@ public class WarehouseVerificationService {
             WarehouseDeliveryNotificationResponse response =
                     warehouseServiceFeignClient.notifyDeliveryArrival(request);
 
-            log.info("[WarehouseVerification] Warehouse acknowledged task={} ack={}",
-                    transportTaskCode,
-                    response != null ? response.getAcknowledgementStatus() : "null"
-            );
+            String ack = response != null ? response.getAcknowledgementStatus() : null;
+            log.info("[WarehouseVerification] Warehouse acknowledged task={} ack={}", transportTaskCode, ack);
+            return ack != null ? ack : "ACKNOWLEDGED";
 
         } catch (FeignException ex) {
             // Per spec: log the failure, do NOT propagate.
@@ -76,15 +74,26 @@ public class WarehouseVerificationService {
                     "[WarehouseVerification] Feign call failed for task={} status={} httpStatus={} reason={}",
                     transportTaskCode, deliveryStatus, ex.status(), ex.getMessage()
             );
+            return null;
         } catch (Exception ex) {
             log.error(
                     "[WarehouseVerification] Unexpected error notifying warehouse for task={} : {}",
                     transportTaskCode, ex.getMessage(), ex
             );
+            return null;
         }
     }
 
-    /** Called by WarehouseVerificationController when Warehouse Service re-confirms a delivery. */
+    /**
+     * Called by WarehouseVerificationController when Warehouse Service re-confirms a delivery.
+     *
+     * <p>The re-confirmation does NOT change the delivery status in Logistics — the status was
+     * already moved by the driver. Instead, it appends a WAREHOUSE_ACK audit entry via
+     * {@link DeliveryTrackingService#recordWarehouseAcknowledgement} so Dilum's listener can
+     * store it.
+     *
+     * <p>Only DELIVERED and UNLOADED_AT_WAREHOUSE are accepted as confirmedStatus values.
+     */
     public WarehouseReConfirmResponse handleWarehouseReConfirmation(
             WarehouseReConfirmRequest request
     ) {
@@ -116,30 +125,18 @@ public class WarehouseVerificationService {
             );
         }
 
-        // ── Update delivery status via DeliveryTrackingService ─────────────
+        // ── Record warehouse acknowledgement via DeliveryTrackingService ──────
+        // This appends a WAREHOUSE_ACK history row; it does NOT move the delivery status.
         try {
-            TrackingStatusUpdateRequest updateRequest = new TrackingStatusUpdateRequest(
-                    confirmedStatus,
-                    null,           // latitude  — not available from warehouse re-confirm
-                    null,           // longitude — not available from warehouse re-confirm
-                    null,           // updatedBy — system/warehouse-initiated, no user UUID
-                    request.getNotes() != null
-                            ? "Re-confirmed by Warehouse Service: " + request.getNotes()
-                            : "Re-confirmed by Warehouse Service",
-                    false           // authorizedOverride — valid next step, no override needed
-            );
+            String notes = request.getNotes() != null
+                    ? "Re-confirmed by Warehouse Service: " + request.getNotes()
+                    : "Re-confirmed by Warehouse Service";
 
-            deliveryTrackingService.updateStatus(taskId, updateRequest);
+            deliveryTrackingService.recordWarehouseAcknowledgement(taskId, notes);
 
-            log.info("[WarehouseVerification] Delivery status synced for task={} to {}",
+            log.info("[WarehouseVerification] Warehouse acknowledgement recorded for task={} confirmedStatus={}",
                     taskId, confirmedStatus);
             return WarehouseReConfirmResponse.accepted(taskId, confirmedString);
-
-        } catch (InvalidDeliveryStatusException ex) {
-            // Status is already at or past the confirmed value — not a failure, just already done
-            log.info("[WarehouseVerification] Status already at or past confirmed value for task={}: {}",
-                    taskId, ex.getMessage());
-            return WarehouseReConfirmResponse.alreadyConfirmed(taskId, confirmedString);
 
         } catch (ResourceNotFoundException ex) {
             log.error("[WarehouseVerification] Transport task not found for re-confirmation: task={}",
