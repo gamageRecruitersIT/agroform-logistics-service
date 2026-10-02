@@ -38,6 +38,19 @@ public class TrackingStatusUpdateRequest {
     @Size(max = 1000, message = "notes must be at most 1000 characters")
     private String notes;
 
-    /** Only honoured for the TRANSPORTER role. Allows a backward move or a skipped step. */
-    private boolean authorizedOverride = false;
+    /**
+     * Only honoured for the TRANSPORTER role.
+     * Null is treated as false.
+     */
+    private Boolean authorizedOverride;
+
+    /**
+     * Keeps existing service code compatible:
+     * request.isAuthorizedOverride()
+     *
+     * If the JSON field is omitted or null, this returns false.
+     */
+    public boolean isAuthorizedOverride() {
+        return Boolean.TRUE.equals(authorizedOverride);
+    }
 }

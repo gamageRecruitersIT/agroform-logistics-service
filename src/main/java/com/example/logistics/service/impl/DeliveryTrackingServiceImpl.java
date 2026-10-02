@@ -20,6 +20,8 @@ import com.example.logistics.repository.TransportTaskRef;
 import com.example.logistics.security.CurrentUser;
 import com.example.logistics.security.UserRole;
 import com.example.logistics.service.DeliveryTrackingService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -44,6 +46,9 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
     private final TransportTaskLookupRepository taskLookup;
     private final ApplicationEventPublisher eventPublisher;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     // ==================================================================
     // Internal methods (other modules)
     // ==================================================================
@@ -54,6 +59,9 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
         if (transportTaskId == null) {
             throw new BadRequestException("transportTaskId is required");
         }
+        // The assignment module saves the task with JPA in the same transaction, but the lookup below is raw SQL.
+        // Push the pending inserts to the database first so the task row is visible to it.
+        entityManager.flush();
         TransportTaskRef task = taskLookup.findById(transportTaskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Transport task not found: " + transportTaskId));
         return initialize(task);
