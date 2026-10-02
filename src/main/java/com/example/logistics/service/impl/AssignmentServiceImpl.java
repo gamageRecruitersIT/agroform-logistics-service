@@ -9,7 +9,6 @@ import com.example.logistics.entity.TransportTask;
 import com.example.logistics.entity.Vehicle;
 import com.example.logistics.entity.enums.TransportRequestStatusEnum;
 import com.example.logistics.entity.enums.TransportTaskStatus;
-import com.example.logistics.entity.enums.VehicleAvailability;
 import com.example.logistics.exception.BadRequestException;
 import com.example.logistics.exception.DriverAlreadyAssignedException;
 import com.example.logistics.exception.ResourceNotFoundException;
@@ -74,13 +73,12 @@ public class AssignmentServiceImpl implements AssignmentService {
                     "Driver " + dto.getDriverId() + " is already assigned to an active task.");
         }
 
-        // Step 4: Validate vehicle is AVAILABLE (throws VehicleNotAvailableException if not)
+        // Step 4+5: Validate vehicle is AVAILABLE and reserve it atomically (row-locked)
+        // markVehicleAssigned validates, throws VehicleNotAvailableException if not AVAILABLE,
+        // then sets ASSIGNED — Vasitha's service rejects setting ASSIGNED via updateVehicleAvailability directly.
         Vehicle vehicle = vehicleRepository.findById(dto.getVehicleId())
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + dto.getVehicleId()));
-        vehicleService.validateVehicleAvailabilityForAssignment(vehicle.getVehicleCode());
-
-        // Step 5: Reserve vehicle — flip status to ASSIGNED
-        vehicleService.updateVehicleAvailability(vehicle.getVehicleCode(), VehicleAvailability.ASSIGNED);
+        vehicleService.markVehicleAssigned(vehicle.getVehicleCode());
 
         // Step 6: Generate task code
         String taskCode = "TTK-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
@@ -96,7 +94,7 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .taskStatus(TransportTaskStatus.ASSIGNED)
                 .build();
 
-        TransportTask savedTask = transportTaskRepository.save(task);
+        TransportTask savedTask = transportTaskRepository.saveAndFlush(task); // flush before Dilum's initializeTracking FK lookup
 
         // Step 8: Create DriverAssignment record
         DriverAssignment assignment = DriverAssignment.builder()
