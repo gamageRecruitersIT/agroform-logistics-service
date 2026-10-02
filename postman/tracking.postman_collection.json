@@ -1,582 +1,190 @@
 {
   "info": {
-    "name": "Logistics - Delivery Tracking (Dilum)",
+    "_postman_id": "agroform-receipt-service-collection",
+    "name": "Agroform Order Payment Service - Receipt Module",
+    "description": "Postman collection for testing Receipt generation, retrieval and PDF download.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "item": [
+    {
+      "name": "Receipts",
+      "item": [
+        {
+          "name": "01 - Generate Receipt",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"paymentId\": \"{{paymentId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payment/receipt/generate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payment",
+                "receipt",
+                "generate"
+              ]
+            },
+            "description": "Generate a receipt for a PAID order."
+          },
+          "response": []
+        },
+        {
+          "name": "02 - Get Receipt By Code",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payment/receipt/{{receiptCode}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payment",
+                "receipt",
+                "{{receiptCode}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "03 - Get Receipt By Order Code",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payment/receipt/order/{{orderCode}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payment",
+                "receipt",
+                "order",
+                "{{orderCode}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "04 - Download Receipt PDF",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/pdf"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/payment/receipt/{{receiptCode}}/download",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "payment",
+                "receipt",
+                "{{receiptCode}}",
+                "download"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (pm.request.url.toString().includes('/receipt/generate')) {",
+          "    pm.test('Receipt generated successfully', function () {",
+          "        pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+          "    });",
+          "",
+          "    let json = {};",
+          "    try {",
+          "        json = pm.response.json();",
+          "    } catch (e) {",
+          "        return;",
+          "    }",
+          "",
+          "    if (json.data && json.data.receiptCode) {",
+          "        pm.collectionVariables.set('receiptCode', json.data.receiptCode);",
+          "        console.log('Receipt Code:', json.data.receiptCode);",
+          "    }",
+          "}",
+          "",
+          "if (pm.request.url.toString().includes('/receipt/') && !pm.request.url.toString().includes('/generate')) {",
+          "    pm.test('HTTP status is successful', function () {",
+          "        pm.expect(pm.response.code).to.be.within(200, 299);",
+          "    });",
+          "}"
+        ]
+      }
+    }
+  ],
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:8083"
+      "value": "http://localhost:8080",
+      "type": "string"
     },
     {
-      "key": "taskCode",
-      "value": "TTK-XXXXXXXX"
+      "key": "orderId",
+      "value": "a0000000-0000-0000-0000-000000000001",
+      "type": "string"
     },
     {
-      "key": "driverId",
-      "value": "00000000-0000-0000-0000-000000000000"
+      "key": "paymentId",
+      "value": "881cdeed-5862-4750-a359-4d4c12ab2a48",
+      "type": "string"
     },
     {
-      "key": "transporterId",
-      "value": "00000000-0000-0000-0000-000000000000"
+      "key": "receiptCode",
+      "value": "",
+      "type": "string"
     },
     {
-      "key": "farmerId",
-      "value": "00000000-0000-0000-0000-000000000000"
-    }
-  ],
-  "item": [
-    {
-      "name": "1. Init tracking (TRANSPORTER)",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "X-User-Id",
-            "value": "{{transporterId}}"
-          },
-          {
-            "key": "X-User-Role",
-            "value": "TRANSPORTER"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/init",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "v1",
-            "logistics",
-            "tracking",
-            "{{taskCode}}",
-            "init"
-          ]
-        }
-      }
-    },
-    {
-      "name": "2. My tasks (DRIVER)",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "X-User-Id",
-            "value": "{{driverId}}"
-          },
-          {
-            "key": "X-User-Role",
-            "value": "DRIVER"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/logistics/tracking/my-tasks",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "v1",
-            "logistics",
-            "tracking",
-            "my-tasks"
-          ]
-        }
-      }
-    },
-    {
-      "name": "3. Current status (FARMER)",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "X-User-Id",
-            "value": "{{farmerId}}"
-          },
-          {
-            "key": "X-User-Role",
-            "value": "FARMER"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "v1",
-            "logistics",
-            "tracking",
-            "{{taskCode}}"
-          ]
-        }
-      }
-    },
-    {
-      "name": "4. Submit location (DRIVER)",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "X-User-Id",
-            "value": "{{driverId}}"
-          },
-          {
-            "key": "X-User-Role",
-            "value": "DRIVER"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/location",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "v1",
-            "logistics",
-            "tracking",
-            "{{taskCode}}",
-            "location"
-          ]
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"latitude\": 6.9271,\n  \"longitude\": 79.8612,\n  \"notes\": \"On the way to farm\"\n}"
-        }
-      }
-    },
-    {
-      "name": "5. Status -> LOADED (DRIVER)",
-      "request": {
-        "method": "PATCH",
-        "header": [
-          {
-            "key": "X-User-Id",
-            "value": "{{driverId}}"
-          },
-          {
-            "key": "X-User-Role",
-            "value": "DRIVER"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "v1",
-            "logistics",
-            "tracking",
-            "{{taskCode}}",
-            "status"
-          ]
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"newStatus\": \"LOADED\",\n  \"latitude\": 7.2906,\n  \"longitude\": 80.6337,\n  \"notes\": \"Loaded at farm\"\n}"
-        }
-      }
-    },
-    {
-      "name": "6. Status -> IN_TRANSIT (DRIVER)",
-      "request": {
-        "method": "PATCH",
-        "header": [
-          {
-            "key": "X-User-Id",
-            "value": "{{driverId}}"
-          },
-          {
-            "key": "X-User-Role",
-            "value": "DRIVER"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "v1",
-            "logistics",
-            "tracking",
-            "{{taskCode}}",
-            "status"
-          ]
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"newStatus\": \"IN_TRANSIT\"\n}"
-        }
-      }
-    },
-    {
-      "name": "7. Skip step -> expect 400 (DRIVER)",
-      "request": {
-        "method": "PATCH",
-        "header": [
-          {
-            "key": "X-User-Id",
-            "value": "{{driverId}}"
-          },
-          {
-            "key": "X-User-Role",
-            "value": "DRIVER"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "v1",
-            "logistics",
-            "tracking",
-            "{{taskCode}}",
-            "status"
-          ]
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"newStatus\": \"UNLOADED_AT_WAREHOUSE\"\n}"
-        }
-      }
-    },
-    {
-      "name": "8. Flag delay (DRIVER)",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "X-User-Id",
-            "value": "{{driverId}}"
-          },
-          {
-            "key": "X-User-Role",
-            "value": "DRIVER"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/delay",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "v1",
-            "logistics",
-            "tracking",
-            "{{taskCode}}",
-            "delay"
-          ]
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"reason\": \"Heavy traffic\"\n}"
-        }
-      }
-    },
-    {
-      "name": "9. Resolve delay (TRANSPORTER)",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "X-User-Id",
-            "value": "{{transporterId}}"
-          },
-          {
-            "key": "X-User-Role",
-            "value": "TRANSPORTER"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/delay/resolve",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "v1",
-            "logistics",
-            "tracking",
-            "{{taskCode}}",
-            "delay",
-            "resolve"
-          ]
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"reason\": \"Traffic cleared\"\n}"
-        }
-      }
-    },
-    {
-      "name": "10. Status -> DELIVERED (DRIVER)",
-      "request": {
-        "method": "PATCH",
-        "header": [
-          {
-            "key": "X-User-Id",
-            "value": "{{driverId}}"
-          },
-          {
-            "key": "X-User-Role",
-            "value": "DRIVER"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "v1",
-            "logistics",
-            "tracking",
-            "{{taskCode}}",
-            "status"
-          ]
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"newStatus\": \"DELIVERED\"\n}"
-        }
-      }
-    },
-    {
-      "name": "11. Status -> UNLOADED_AT_WAREHOUSE (DRIVER)",
-      "request": {
-        "method": "PATCH",
-        "header": [
-          {
-            "key": "X-User-Id",
-            "value": "{{driverId}}"
-          },
-          {
-            "key": "X-User-Role",
-            "value": "DRIVER"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "v1",
-            "logistics",
-            "tracking",
-            "{{taskCode}}",
-            "status"
-          ]
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"newStatus\": \"UNLOADED_AT_WAREHOUSE\"\n}"
-        }
-      }
-    },
-    {
-      "name": "12. Override backward (TRANSPORTER)",
-      "request": {
-        "method": "PATCH",
-        "header": [
-          {
-            "key": "X-User-Id",
-            "value": "{{transporterId}}"
-          },
-          {
-            "key": "X-User-Role",
-            "value": "TRANSPORTER"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "v1",
-            "logistics",
-            "tracking",
-            "{{taskCode}}",
-            "status"
-          ]
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"newStatus\": \"LOADED\",\n  \"authorizedOverride\": true,\n  \"notes\": \"Correction\"\n}"
-        }
-      }
-    },
-    {
-      "name": "13. History (FARMER)",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "X-User-Id",
-            "value": "{{farmerId}}"
-          },
-          {
-            "key": "X-User-Role",
-            "value": "FARMER"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/history",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "v1",
-            "logistics",
-            "tracking",
-            "{{taskCode}}",
-            "history"
-          ]
-        }
-      }
-    },
-    {
-      "name": "14. History incl. GPS pings (TRANSPORTER)",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "X-User-Id",
-            "value": "{{transporterId}}"
-          },
-          {
-            "key": "X-User-Role",
-            "value": "TRANSPORTER"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/history?includeLocations=true",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "v1",
-            "logistics",
-            "tracking",
-            "{{taskCode}}",
-            "history"
-          ],
-          "query": [
-            {
-              "key": "includeLocations",
-              "value": "true"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "name": "15. Latest location (FARMER)",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "X-User-Id",
-            "value": "{{farmerId}}"
-          },
-          {
-            "key": "X-User-Role",
-            "value": "FARMER"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/location/latest",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "v1",
-            "logistics",
-            "tracking",
-            "{{taskCode}}",
-            "location",
-            "latest"
-          ]
-        }
-      }
+      "key": "orderCode",
+      "value": "",
+      "type": "string"
     }
   ]
 }

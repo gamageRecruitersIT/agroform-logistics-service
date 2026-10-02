@@ -9,7 +9,6 @@ import com.example.logistics.entity.TransportTask;
 import com.example.logistics.entity.Vehicle;
 import com.example.logistics.entity.enums.TransportRequestStatusEnum;
 import com.example.logistics.entity.enums.TransportTaskStatus;
-import com.example.logistics.entity.enums.VehicleAvailability;
 import com.example.logistics.exception.BadRequestException;
 import com.example.logistics.exception.DriverAlreadyAssignedException;
 import com.example.logistics.exception.ResourceNotFoundException;
@@ -57,7 +56,7 @@ public class AssignmentServiceImpl implements AssignmentService {
         if (request.getRequestStatus() != TransportRequestStatusEnum.ACCEPTED) {
             throw new BadRequestException(
                     "Transport request must be in ACCEPTED status to assign. Current status: "
-                    + request.getRequestStatus());
+                            + request.getRequestStatus());
         }
 
         // Step 2: Check no task already exists for this request
@@ -77,10 +76,10 @@ public class AssignmentServiceImpl implements AssignmentService {
         // Step 4: Validate vehicle is AVAILABLE (throws VehicleNotAvailableException if not)
         Vehicle vehicle = vehicleRepository.findById(dto.getVehicleId())
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + dto.getVehicleId()));
-        vehicleService.validateVehicleAvailabilityForAssignment(vehicle.getVehicleCode());
 
-        // Step 5: Reserve vehicle — flip status to ASSIGNED
-        vehicleService.updateVehicleAvailability(vehicle.getVehicleCode(), VehicleAvailability.ASSIGNED);
+        // Step 5: Reserve vehicle - validates AVAILABLE (throws VehicleNotAvailableException) and sets ASSIGNED.
+        // (updateVehicleAvailability(.., ASSIGNED) is rejected by Vasitha's service on purpose.)
+        vehicleService.markVehicleAssigned(vehicle.getVehicleCode());
 
         // Step 6: Generate task code
         String taskCode = "TTK-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
@@ -96,7 +95,8 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .taskStatus(TransportTaskStatus.ASSIGNED)
                 .build();
 
-        TransportTask savedTask = transportTaskRepository.save(task);
+        // saveAndFlush: Dilum's initializeTracking below reads the task row with raw SQL
+        TransportTask savedTask = transportTaskRepository.saveAndFlush(task);
 
         // Step 8: Create DriverAssignment record
         DriverAssignment assignment = DriverAssignment.builder()
