@@ -105,7 +105,7 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
         DeliveryStatus status = findStatusForUpdate(task);
         DeliveryStatusEnum previous = status.getCurrentStatus();
 
-        if (!previous.isBackwardOrSameAs(confirmedStatus)) {
+        if (previous.isBackwardOrSameAs(confirmedStatus)) {
             // task is already past (or at) the confirmed status - nothing to do
             return false;
         }
@@ -131,6 +131,7 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
                 .delayReason(status.getDelayReason())
                 .notes(notes)
                 .build());
+        status = clearDelayOnCompletion(status, task, confirmedStatus, null);
 
         log.info("Transport task {} delivery status: {} -> {} (confirmed by Warehouse Service)",
                 task.transportTaskCode(), previous, confirmedStatus);
@@ -282,6 +283,7 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
                 .updatedBy(user.userId())
                 .notes(notes)
                 .build());
+        status = clearDelayOnCompletion(status, task, next, user.userId());
 
         log.info("Transport task {} delivery status: {} -> {} (by {})",
                 task.transportTaskCode(), previous, next, user.role());
@@ -422,6 +424,34 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
     // ==================================================================
     // Helpers
     // ==================================================================
+
+    /**
+     * A completed delivery must not stay flagged as delayed. When the new status is terminal
+     * (UNLOADED_AT_WAREHOUSE) and the delay flag is still raised, clear it and append a
+     * DELAY_RESOLVED history row so the audit trail stays complete.
+     */
+    private DeliveryStatus clearDelayOnCompletion(DeliveryStatus status, TransportTaskRef task,
+                                                  DeliveryStatusEnum newStatus, UUID actor) {
+        if (!newStatus.isTerminal() || !status.isDelayed()) {
+            return status;
+        }
+        status.setDelayed(false);
+        status.setDelayReason(null);
+        status.setDelayedAt(null);
+        status = deliveryStatusRepository.save(status);
+
+        trackingUpdateRepository.save(TrackingUpdate.builder()
+                .transportTaskId(task.transportTaskId())
+                .updateType(TrackingUpdateType.DELAY_RESOLVED)
+                .previousStatus(newStatus)
+                .newStatus(newStatus)
+                .delayed(false)
+                .updatedBy(actor)
+                .notes("Delay auto-cleared: delivery completed")
+                .build());
+        log.info("Transport task {} delay auto-cleared on completion", task.transportTaskCode());
+        return status;
+    }
 
     private DeliveryStatusResponse initialize(TransportTaskRef task) {
         requireRequestOpen(task);
