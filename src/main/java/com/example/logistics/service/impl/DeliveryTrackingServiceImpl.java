@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -45,6 +46,10 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
     private final TrackingUpdateRepository trackingUpdateRepository;
     private final TransportTaskLookupRepository taskLookup;
     private final ApplicationEventPublisher eventPublisher;
+
+    /** transport_task_code is VARCHAR(20), generated as TTK-XXXXXXXX. */
+    private static final Pattern TASK_CODE_PATTERN = Pattern.compile("^[A-Za-z0-9-]{1,20}$");
+    private static final int MIN_REASON_LENGTH = 3;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -96,6 +101,7 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
         }
         TransportTaskRef task = taskLookup.findById(transportTaskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Transport task not found: " + transportTaskId));
+        requireRequestOpen(task);
         DeliveryStatus status = findStatusForUpdate(task);
         DeliveryStatusEnum previous = status.getCurrentStatus();
 
@@ -217,20 +223,34 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
     @Transactional
     public DeliveryStatusResponse updateStatus(String taskCode, TrackingStatusUpdateRequest request, CurrentUser user) {
         TransportTaskRef task = findTask(taskCode);
-        authorizeStatusChange(task, user, request.isAuthorizedOverride());
+        boolean override = request.isAuthorizedOverride();
+        authorizeStatusChange(task, user, override);
         requireRequestOpen(task);
-        requireCoordinatePair(request.getLatitude(), request.getLongitude());
+        requireValidCoordinates(request.getLatitude(), request.getLongitude());
+
+        String notes = normalizeText(request.getNotes());
+        if (override && notes == null) {
+            throw new BadRequestException(
+                    "notes (the reason for the correction) are required when authorizedOverride is true");
+        }
 
         DeliveryStatus status = findStatusForUpdate(task);
         DeliveryStatusEnum previous = status.getCurrentStatus();
         DeliveryStatusEnum next = request.getNewStatus();
 
+        // The task is completed (driver released, vehicle freed, request COMPLETED) once it is unloaded;
+        // not even an authorized override may reopen it.
+        if (previous.isTerminal()) {
+            throw new InvalidDeliveryStatusException(
+                    "Transport task " + task.transportTaskCode() + " is already " + previous
+                            + "; a completed delivery can no longer be changed");
+        }
         if (previous == next) {
             throw new BadRequestException(
                     "Transport task " + task.transportTaskCode() + " is already in status " + previous);
         }
 
-        if (!request.isAuthorizedOverride()) {
+        if (!override) {
             if (previous.isBackwardOrSameAs(next)) {
                 throw new InvalidDeliveryStatusException(
                         "Cannot move delivery status backward from " + previous + " to " + next
@@ -245,8 +265,8 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
 
         status.setCurrentStatus(next);
         status.setUpdatedBy(user.userId());
-        if (request.getNotes() != null) {
-            status.setNotes(request.getNotes());
+        if (notes != null) {
+            status.setNotes(notes);
         }
         status = deliveryStatusRepository.save(status);
 
@@ -260,7 +280,7 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())
                 .updatedBy(user.userId())
-                .notes(request.getNotes())
+                .notes(notes)
                 .build());
 
         log.info("Transport task {} delivery status: {} -> {} (by {})",
@@ -268,7 +288,7 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
 
         eventPublisher.publishEvent(new DeliveryStatusChangedEvent(
                 task, previous, next, status.isDelayed(), user.userId(),
-                request.getLatitude(), request.getLongitude(), request.getNotes(), OffsetDateTime.now()));
+                request.getLatitude(), request.getLongitude(), notes, OffsetDateTime.now()));
 
         return toDeliveryStatusResponse(status, task);
     }
@@ -285,6 +305,7 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
             throw new ForbiddenException("You are not the assigned driver of task " + task.transportTaskCode());
         }
         requireRequestOpen(task);
+        requireValidCoordinates(request.getLatitude(), request.getLongitude());
 
         DeliveryStatus status = findStatus(task);
         if (status.getCurrentStatus().isTerminal()) {
@@ -303,7 +324,7 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())
                 .updatedBy(user.userId())
-                .notes(request.getNotes())
+                .notes(normalizeText(request.getNotes()))
                 .build());
 
         return toTrackingUpdateResponse(saved, task);
@@ -315,6 +336,7 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
         TransportTaskRef task = findTask(taskCode);
         requireDriverOrTransporterOfTask(task, user, "flag a delay");
         requireRequestOpen(task);
+        String reason = requireReason(request.getReason());
 
         DeliveryStatus status = findStatusForUpdate(task);
 
@@ -330,7 +352,7 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
 
         OffsetDateTime now = OffsetDateTime.now();
         status.setDelayed(true);
-        status.setDelayReason(request.getReason());
+        status.setDelayReason(reason);
         status.setDelayedAt(now);
         status.setUpdatedBy(user.userId());
         status = deliveryStatusRepository.save(status);
@@ -341,15 +363,15 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
                 .previousStatus(status.getCurrentStatus())
                 .newStatus(status.getCurrentStatus())
                 .delayed(true)
-                .delayReason(request.getReason())
+                .delayReason(reason)
                 .updatedBy(user.userId())
-                .notes("Delay flagged: " + request.getReason())
+                .notes("Delay flagged: " + reason)
                 .build());
 
-        log.warn("Transport task {} flagged DELAYED: {}", task.transportTaskCode(), request.getReason());
+        log.warn("Transport task {} flagged DELAYED: {}", task.transportTaskCode(), reason);
 
         eventPublisher.publishEvent(new DeliveryDelayedEvent(
-                task, status.getCurrentStatus(), request.getReason(), user.userId(), now));
+                task, status.getCurrentStatus(), reason, user.userId(), now));
 
         return toDeliveryStatusResponse(status, task);
     }
@@ -365,6 +387,7 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
         if (!user.userId().equals(task.transporterId())) {
             throw new ForbiddenException("You are not the transporter of task " + task.transportTaskCode());
         }
+        String resolution = requireReason(request.getReason());
 
         DeliveryStatus status = findStatusForUpdate(task);
         if (!status.isDelayed()) {
@@ -385,13 +408,13 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
                 .newStatus(status.getCurrentStatus())
                 .delayed(false)
                 .updatedBy(user.userId())
-                .notes("Delay resolved: " + request.getReason())
+                .notes("Delay resolved: " + resolution)
                 .build());
 
         log.info("Transport task {} delay resolved", task.transportTaskCode());
 
         eventPublisher.publishEvent(new DeliveryDelayResolvedEvent(
-                task, status.getCurrentStatus(), user.userId(), request.getReason(), OffsetDateTime.now()));
+                task, status.getCurrentStatus(), user.userId(), resolution, OffsetDateTime.now()));
 
         return toDeliveryStatusResponse(status, task);
     }
@@ -430,8 +453,12 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
         if (taskCode == null || taskCode.isBlank()) {
             throw new BadRequestException("Transport task code is required");
         }
-        return taskLookup.findByCode(taskCode.trim())
-                .orElseThrow(() -> new ResourceNotFoundException("Transport task not found: " + taskCode));
+        String code = taskCode.trim();
+        if (!TASK_CODE_PATTERN.matcher(code).matches()) {
+            throw new BadRequestException("Invalid transport task code format");
+        }
+        return taskLookup.findByCode(code)
+                .orElseThrow(() -> new ResourceNotFoundException("Transport task not found: " + code));
     }
 
     private DeliveryStatus findStatus(TransportTaskRef task) {
@@ -489,10 +516,31 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
         }
     }
 
-    private void requireCoordinatePair(BigDecimal latitude, BigDecimal longitude) {
+    /** Both or neither coordinate, and not the 0,0 "null island" value devices report without a GPS fix. */
+    private void requireValidCoordinates(BigDecimal latitude, BigDecimal longitude) {
         if ((latitude == null) != (longitude == null)) {
             throw new BadRequestException("latitude and longitude must be provided together");
         }
+        if (latitude != null && latitude.signum() == 0 && longitude.signum() == 0) {
+            throw new BadRequestException("Coordinates 0,0 are not a valid location; check the device GPS");
+        }
+    }
+
+    /** Trims; blank becomes null so whitespace-only notes are not stored. */
+    private static String normalizeText(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private static String requireReason(String reason) {
+        String trimmed = normalizeText(reason);
+        if (trimmed == null || trimmed.length() < MIN_REASON_LENGTH) {
+            throw new BadRequestException("reason must be at least " + MIN_REASON_LENGTH + " characters");
+        }
+        return trimmed;
     }
 
     private DeliveryStatusResponse toDeliveryStatusResponse(DeliveryStatus status, TransportTaskRef task) {

@@ -18,6 +18,6 @@ import lombok.Setter;
 public class DelayFlagRequest {
 
     @NotBlank(message = "reason is required")
-    @Size(max = 500, message = "reason must be at most 500 characters")
+    @Size(min = 3, max = 500, message = "reason must be between 3 and 500 characters")
     private String reason;
 }
