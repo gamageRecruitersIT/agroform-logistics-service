@@ -1,6 +1,5 @@
 package com.example.logistics.repository;
 
-
 import com.example.logistics.entity.TransportRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
