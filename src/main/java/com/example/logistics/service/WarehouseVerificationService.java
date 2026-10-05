@@ -3,7 +3,7 @@ package com.example.logistics.service;
 import com.example.logistics.dto.request.WarehouseReConfirmRequest;
 import com.example.logistics.dto.response.WarehouseReConfirmResponse;
 import com.example.logistics.entity.DeliveryStatusEnum;
-import com.example.logistics.exception.ExternalServiceException;
+import com.example.logistics.exception.BadRequestException;
 import com.example.logistics.exception.ResourceNotFoundException;
 import com.example.logistics.feign.client.WarehouseServiceFeignClient;
 import com.example.logistics.feign.dto.WarehouseDeliveryNotificationRequest;
@@ -102,8 +102,8 @@ public class WarehouseVerificationService {
         } catch (IllegalArgumentException ex) {
             log.warn("[WarehouseVerification] Unrecognized confirmedStatus={} for task={}",
                     confirmedString, taskId);
-            throw new ExternalServiceException(
-                    "Warehouse re-confirmation contains unrecognized status: " + confirmedString
+            throw new BadRequestException(
+                    "Unrecognized confirmedStatus: " + confirmedString
             );
         }
 
@@ -111,9 +111,8 @@ public class WarehouseVerificationService {
                 && confirmedStatus != DeliveryStatusEnum.UNLOADED_AT_WAREHOUSE) {
             log.warn("[WarehouseVerification] Unexpected confirmedStatus={} for task={}",
                     confirmedStatus, taskId);
-            throw new ExternalServiceException(
-                    "Warehouse re-confirmation only supports DELIVERED or UNLOADED_AT_WAREHOUSE, got: "
-                            + confirmedStatus
+            throw new BadRequestException(
+                    "confirmedStatus must be DELIVERED or UNLOADED_AT_WAREHOUSE, got: " + confirmedStatus
             );
         }
 
@@ -137,7 +136,7 @@ public class WarehouseVerificationService {
         } catch (ResourceNotFoundException ex) {
             log.error("[WarehouseVerification] Transport task not found for re-confirmation: task={}",
                     taskId);
-            throw new ExternalServiceException("Transport task not found: " + taskId);
+            throw ex;  // 404 — the task UUID the Warehouse Service sent does not exist
         }
     }
 }
