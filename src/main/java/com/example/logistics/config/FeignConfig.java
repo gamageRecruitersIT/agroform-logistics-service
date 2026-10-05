@@ -1,33 +1,42 @@
 package com.example.logistics.config;
 
+import feign.Logger;
 import feign.RequestInterceptor;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import jakarta.servlet.http.HttpServletRequest;
-
+// Shared Feign configuration for all outbound clients (Identity & Access, Communication & Support, ...).
+// Forwards the caller's Authorization header (JWT) onto downstream Feign calls so the
+// receiving service can identify the acting user / enforce its own role checks.
 @Configuration
 public class FeignConfig {
 
-    /**
-     * Intercepts outgoing Feign requests and attaches the Authorization token
-     * coming from the incoming HTTP request.
-     */
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+
     @Bean
-    public RequestInterceptor requestInterceptor() {
+    public RequestInterceptor authorizationHeaderInterceptor() {
         return requestTemplate -> {
-            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-            if (attributes != null) {
-                HttpServletRequest request = attributes.getRequest();
-                // Get the Authorization header from the incoming request (Postman -> Logistics)
-                String authHeader = request.getHeader("Authorization");
-                if (authHeader != null) {
-                    // Attach it to the outgoing request (Logistics -> Order Service)
-                    requestTemplate.header("Authorization", authHeader);
-                }
+            ServletRequestAttributes attributes =
+                    (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+            if (attributes == null) {
+                return;
+            }
+
+            HttpServletRequest request = attributes.getRequest();
+            String authorizationHeader = request.getHeader(AUTHORIZATION_HEADER);
+
+            if (authorizationHeader != null && !authorizationHeader.isBlank()) {
+                requestTemplate.header(AUTHORIZATION_HEADER, authorizationHeader);
             }
         };
+    }
+
+    @Bean
+    public Logger.Level feignLoggerLevel() {
+        return Logger.Level.BASIC;
     }
 }
