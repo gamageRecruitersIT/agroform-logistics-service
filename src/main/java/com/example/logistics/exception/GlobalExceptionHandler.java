@@ -1,10 +1,8 @@
 package com.example.logistics.exception;
 
 import com.example.logistics.dto.response.ApiResponse;
-import tools.jackson.databind.ObjectMapper;
 import feign.FeignException;
 import jakarta.validation.ConstraintViolationException;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -20,10 +18,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
-@RequiredArgsConstructor
 public class GlobalExceptionHandler {
-
-    private final ObjectMapper objectMapper;
 
     private ResponseEntity<ApiResponse<Object>> build(HttpStatus status, String msg) {
         return ResponseEntity.status(status).body(ApiResponse.error(msg));
@@ -88,44 +83,11 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, "Data conflict: duplicate or invalid reference");
     }
 
-    // Feign: reflect the downstream status instead of masking everything as 503
-    @ExceptionHandler(FeignException.class)
-    public ResponseEntity<ApiResponse<Object>> handleFeign(FeignException ex) {
-        int status = ex.status();
-        log.error("Downstream call failed: status={}, message={}", status, ex.getMessage());
-
-        if (status == 400 || status == 404 || status == 409) {
-            return build(HttpStatus.valueOf(status), downstreamMessage(ex));
-        }
-        if (status == 401 || status == 403) {
-            return build(HttpStatus.valueOf(status), "Dependent service rejected the request: " + downstreamMessage(ex));
-        }
-        if (status >= 500) {
-            return build(HttpStatus.BAD_GATEWAY, "Dependent service failed to process the request");
-        }
-        if (ex.getCause() instanceof java.net.SocketTimeoutException) {
-            return build(HttpStatus.GATEWAY_TIMEOUT, "Dependent service timed out");
-        }
-        // status -1 (connection refused / unknown host) or unexpected
-        return build(HttpStatus.SERVICE_UNAVAILABLE, "A dependent service is currently unavailable");
-    }
-
-    // 503 - explicit downstream failures raised by our own code
-    @ExceptionHandler(ExternalServiceException.class)
-    public ResponseEntity<ApiResponse<Object>> handleExternal(ExternalServiceException ex) {
+    // 503 - Feign calls to Order/Warehouse/Communication/Identity services
+    @ExceptionHandler({FeignException.class, ExternalServiceException.class})
+    public ResponseEntity<ApiResponse<Object>> handleDownstream(Exception ex) {
         log.error("Downstream service error", ex);
         return build(HttpStatus.SERVICE_UNAVAILABLE, "A dependent service is currently unavailable");
-    }
-
-    // Both services return a JSON "message" field; fall back to a generic text.
-    private String downstreamMessage(FeignException ex) {
-        try {
-            String msg = objectMapper.readTree(ex.contentUTF8()).path("message").asText("");
-            if (!msg.isBlank()) return msg;
-        } catch (Exception ignored) {
-            // empty / non-JSON body
-        }
-        return "Request to dependent service failed";
     }
 
     // 500 - fallback (details only in logs, not sent to client)
