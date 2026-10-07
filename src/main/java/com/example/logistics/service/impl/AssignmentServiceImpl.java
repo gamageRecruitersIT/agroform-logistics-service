@@ -38,8 +38,8 @@ public class AssignmentServiceImpl implements AssignmentService {
     private final DriverAssignmentRepository driverAssignmentRepository;
     private final TransportRequestRepository transportRequestRepository;
     private final VehicleRepository vehicleRepository;
-    private final VehicleService vehicleService;
-    private final DeliveryTrackingService deliveryTrackingService;
+    private final VehicleService vehicleService;           // Vasitha's service
+    private final DeliveryTrackingService deliveryTrackingService; // Dilum's service
 
     @Override
     @Transactional
@@ -56,7 +56,7 @@ public class AssignmentServiceImpl implements AssignmentService {
         if (request.getRequestStatus() != TransportRequestStatusEnum.ACCEPTED) {
             throw new BadRequestException(
                     "Transport request must be in ACCEPTED status to assign. Current status: "
-                            + request.getRequestStatus());
+                    + request.getRequestStatus());
         }
 
         // Step 2: Check no task already exists for this request
@@ -73,14 +73,11 @@ public class AssignmentServiceImpl implements AssignmentService {
                     "Driver " + dto.getDriverId() + " is already assigned to an active task.");
         }
 
-        // Step 4: Validate vehicle exists
+        // Step 4+5: Validate vehicle is AVAILABLE and reserve it atomically (row-locked)
+        // markVehicleAssigned validates, throws VehicleNotAvailableException if not AVAILABLE,
+        // then sets ASSIGNED — Vasitha's service rejects setting ASSIGNED via updateVehicleAvailability directly.
         Vehicle vehicle = vehicleRepository.findById(dto.getVehicleId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Vehicle not found: " + dto.getVehicleId()));
-
-        // Step 5: Reserve vehicle.
-        // markVehicleAssigned validates that the vehicle is AVAILABLE
-        // and changes its status to ASSIGNED.
+                .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + dto.getVehicleId()));
         vehicleService.markVehicleAssigned(vehicle.getVehicleCode());
 
         // Step 6: Generate task code
@@ -113,10 +110,10 @@ public class AssignmentServiceImpl implements AssignmentService {
 
         DriverAssignment savedAssignment = driverAssignmentRepository.save(assignment);
 
-        // Step 9: Initialize DeliveryStatus (AWAITING_PICKUP)
+        // Step 9: Initialize DeliveryStatus (AWAITING_PICKUP) — Dilum's service
         deliveryTrackingService.initializeTracking(savedTask.getTransportTaskId());
 
-        // Step 10: TODO (Gayani) - Publish DRIVER_ASSIGNED + VEHICLE_ASSIGNED Kafka events
+        // Step 10: TODO (Gayani) — Publish DRIVER_ASSIGNED + VEHICLE_ASSIGNED Kafka events
 
         log.info("Assignment complete. Task: {}, Assignment: {}",
                 savedTask.getTransportTaskCode(), savedAssignment.getAssignmentId());
@@ -189,12 +186,9 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .collect(Collectors.toList());
     }
 
-    // Mapping Helpers
+    // ─── Mapping Helpers ────────────────────────────────────────────────────────
 
-    private AssignmentResponseDto mapToAssignmentResponse(
-            DriverAssignment assignment,
-            TransportTask task) {
-
+    private AssignmentResponseDto mapToAssignmentResponse(DriverAssignment assignment, TransportTask task) {
         return AssignmentResponseDto.builder()
                 .assignmentId(assignment.getAssignmentId())
                 .transportTaskCode(task != null ? task.getTransportTaskCode() : null)
