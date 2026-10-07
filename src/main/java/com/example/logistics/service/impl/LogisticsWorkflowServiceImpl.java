@@ -4,12 +4,10 @@ import com.example.logistics.enums.LogisticsEventType;
 import com.example.logistics.service.LogisticsEventService;
 import com.example.logistics.service.LogisticsWorkflowService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-@ConditionalOnBean(LogisticsEventService.class)
 public class LogisticsWorkflowServiceImpl implements LogisticsWorkflowService {
 
     private final LogisticsEventService logisticsEventService;
