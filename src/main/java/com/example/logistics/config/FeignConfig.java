@@ -8,8 +8,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-// Shared Feign configuration for all outbound clients.
-// Forwards the caller's Authorization header (JWT) onto downstream Feign calls.
+// Shared Feign configuration for all outbound clients (Identity & Access, Communication & Support, ...).
+// Forwards the caller's Authorization header (JWT) onto downstream Feign calls so the
+// receiving service can identify the acting user / enforce its own role checks.
 @Configuration
 public class FeignConfig {
 

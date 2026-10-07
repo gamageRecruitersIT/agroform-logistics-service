@@ -96,7 +96,9 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .taskStatus(TransportTaskStatus.ASSIGNED)
                 .build();
 
-        TransportTask savedTask = transportTaskRepository.saveAndFlush(task); // flush before Dilum's initializeTracking FK lookup
+        // Flush before initializeTracking so the tracking service can
+        // immediately find the newly-created task.
+        TransportTask savedTask = transportTaskRepository.saveAndFlush(task);
 
         // Step 8: Create DriverAssignment record
         DriverAssignment assignment = DriverAssignment.builder()
