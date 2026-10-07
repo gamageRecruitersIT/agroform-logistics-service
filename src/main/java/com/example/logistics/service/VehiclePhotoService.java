@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface VehiclePhotoService {
-    VehiclePhotoResponseDto uploadPhoto(UUID vehicleId, MultipartFile file, Boolean isPrimary, Integer displayOrder);
-    List<VehiclePhotoResponseDto> getVehiclePhotos(UUID vehicleId);
+    VehiclePhotoResponseDto uploadPhoto(String vehicleCode, MultipartFile file, Boolean isPrimary, Integer displayOrder);
+
+    List<VehiclePhotoResponseDto> getVehiclePhotos(String vehicleCode);
 }
