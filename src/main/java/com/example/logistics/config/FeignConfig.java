@@ -16,6 +16,10 @@ public class FeignConfig {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
 
+    /**
+     * Intercepts outgoing Feign requests and attaches the Authorization token
+     * coming from the incoming HTTP request.
+     */
     @Bean
     public RequestInterceptor authorizationHeaderInterceptor() {
         return requestTemplate -> {
@@ -35,6 +39,9 @@ public class FeignConfig {
         };
     }
 
+    /**
+     * Enables basic Feign request/response logging.
+     */
     @Bean
     public Logger.Level feignLoggerLevel() {
         return Logger.Level.BASIC;
