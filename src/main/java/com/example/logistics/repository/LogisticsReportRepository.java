@@ -11,7 +11,7 @@ import java.util.List;
 
 @Repository
 @RequiredArgsConstructor
-@ConditionalOnBean(JdbcTemplate.class)
+//@ConditionalOnBean(JdbcTemplate.class)
 public class LogisticsReportRepository {
 
     private final JdbcTemplate jdbcTemplate;

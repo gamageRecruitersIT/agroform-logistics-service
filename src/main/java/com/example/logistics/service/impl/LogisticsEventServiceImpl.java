@@ -20,6 +20,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+//@ConditionalOnBean(LogisticsEventRepository.class)
 public class LogisticsEventServiceImpl implements LogisticsEventService {
 
     private final LogisticsEventRepository eventRepository;
