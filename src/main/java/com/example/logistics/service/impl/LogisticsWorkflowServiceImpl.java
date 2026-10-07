@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-@ConditionalOnBean(LogisticsEventService.class)
+//@ConditionalOnBean(LogisticsEventService.class)
 public class LogisticsWorkflowServiceImpl implements LogisticsWorkflowService {
 
     private final LogisticsEventService logisticsEventService;

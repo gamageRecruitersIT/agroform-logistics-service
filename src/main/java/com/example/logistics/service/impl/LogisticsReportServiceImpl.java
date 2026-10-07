@@ -13,7 +13,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@ConditionalOnBean(LogisticsReportRepository.class)
+//@ConditionalOnBean(LogisticsReportRepository.class)
 public class LogisticsReportServiceImpl implements LogisticsReportService {
 
     private final LogisticsReportRepository reportRepository;
