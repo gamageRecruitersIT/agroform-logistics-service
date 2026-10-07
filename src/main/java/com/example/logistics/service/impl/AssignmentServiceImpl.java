@@ -18,6 +18,7 @@ import com.example.logistics.repository.TransportTaskRepository;
 import com.example.logistics.repository.VehicleRepository;
 import com.example.logistics.service.AssignmentService;
 import com.example.logistics.service.DeliveryTrackingService;
+import com.example.logistics.service.LogisticsWorkflowService;
 import com.example.logistics.service.VehicleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +41,7 @@ public class AssignmentServiceImpl implements AssignmentService {
     private final VehicleRepository vehicleRepository;
     private final VehicleService vehicleService;           // Vasitha's service
     private final DeliveryTrackingService deliveryTrackingService; // Dilum's service
+        private final LogisticsWorkflowService logisticsWorkflowService;
 
     @Override
     @Transactional
@@ -113,7 +115,20 @@ public class AssignmentServiceImpl implements AssignmentService {
         // Step 9: Initialize DeliveryStatus (AWAITING_PICKUP) — Dilum's service
         deliveryTrackingService.initializeTracking(savedTask.getTransportTaskId());
 
-        // Step 10: TODO (Gayani) — Publish DRIVER_ASSIGNED + VEHICLE_ASSIGNED Kafka events
+        // Record audit events; Kafka publishing occurs after the transaction commits.
+        String createdBy = transporterId.toString();
+        logisticsWorkflowService.onVehicleAssigned(
+                request.getTransportRequestCode(),
+                savedTask.getTransportTaskCode(),
+                vehicle.getVehicleCode(),
+                createdBy
+        );
+        logisticsWorkflowService.onDriverAssigned(
+                request.getTransportRequestCode(),
+                savedTask.getTransportTaskCode(),
+                vehicle.getVehicleCode(),
+                createdBy
+        );
 
         log.info("Assignment complete. Task: {}, Assignment: {}",
                 savedTask.getTransportTaskCode(), savedAssignment.getAssignmentId());
