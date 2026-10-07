@@ -11,7 +11,7 @@ import java.util.Map;
 @Configuration
 public class CloudinaryConfig {
 
-    // Team Leader ගේ YML එකට ගැලපෙන්න hyphen (-) සහිතව වෙනස් කර ඇත
+    
     @Value("${cloudinary.cloud-name}")
     private String cloudName;
 
