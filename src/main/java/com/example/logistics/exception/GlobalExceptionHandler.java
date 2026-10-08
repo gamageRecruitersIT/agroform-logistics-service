@@ -55,9 +55,17 @@ public class GlobalExceptionHandler {
     }
 
     // 403 - TRANSPORTER / DRIVER / FARMER role checks
-    @ExceptionHandler({ForbiddenException.class, UnauthorizedRoleException.class, AccessDeniedException.class})
+    @ExceptionHandler({ForbiddenException.class, UnauthorizedRoleException.class})
     public ResponseEntity<ApiResponse<Object>> handleForbidden(RuntimeException ex) {
         return build(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
+    // @PreAuthorize denials: rethrow so Spring Security answers (401 anonymous via
+    // RestAuthenticationEntryPoint, 403 authenticated via RestAccessDeniedHandler)
+    // instead of the generic handler below masking them.
+    @ExceptionHandler(AccessDeniedException.class)
+    public void handleAccessDenied(AccessDeniedException ex) {
+        throw ex;
     }
 
     // 400 - @Valid body errors
@@ -76,7 +84,8 @@ public class GlobalExceptionHandler {
     }
 
     // 400 - bad JSON / wrong param type
-    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
+    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class,
+            IllegalArgumentException.class})
     public ResponseEntity<ApiResponse<Object>> handleMalformed(Exception ex) {
         return build(HttpStatus.BAD_REQUEST, "Malformed request or invalid parameter");
     }
