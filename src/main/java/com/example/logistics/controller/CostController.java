@@ -1,6 +1,8 @@
 package com.example.logistics.controller;
 
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.example.logistics.dto.response.ApiResponse;
 import com.example.logistics.dto.request.CostPreviewRequest;
 import com.example.logistics.dto.response.CostPreviewResponse;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
 @RestController
+@PreAuthorize("hasAnyRole('FARMER','TRANSPORTER','DRIVER')")
 @RequestMapping("/api/v1/logistics/cost")
 @RequiredArgsConstructor
 public class CostController {

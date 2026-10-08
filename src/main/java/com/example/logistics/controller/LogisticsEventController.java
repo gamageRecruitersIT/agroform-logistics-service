@@ -1,5 +1,7 @@
 package com.example.logistics.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.example.logistics.dto.request.LogisticsEventRequest;
 import com.example.logistics.dto.response.ApiResponse;
 import com.example.logistics.dto.response.LogisticsEventResponse;
@@ -16,6 +18,7 @@ import java.util.List;
 import java.util.Locale;
 
 @RestController
+@PreAuthorize("hasAnyRole('FARMER','TRANSPORTER','DRIVER')")
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/logistics/events")
 public class LogisticsEventController {

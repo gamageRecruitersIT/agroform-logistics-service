@@ -1,5 +1,7 @@
 package com.example.logistics.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.example.logistics.dto.request.DelayFlagRequest;
 import com.example.logistics.dto.request.LocationUpdateRequest;
 import com.example.logistics.dto.request.TrackingStatusUpdateRequest;
@@ -31,6 +33,7 @@ import java.util.List;
  *   FARMER      - read-only (own tasks)
  */
 @RestController
+@PreAuthorize("hasAnyRole('FARMER','TRANSPORTER','DRIVER')")
 @RequestMapping("/api/v1/logistics/tracking")
 @RequiredArgsConstructor
 public class DeliveryTrackingController {
