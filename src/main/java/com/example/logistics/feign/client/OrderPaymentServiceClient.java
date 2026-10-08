@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.UUID;
 
-@FeignClient(name = "order-payment-service", url = "${external.order-service.url:http://localhost:8080}")
+@FeignClient(name = "order-payment-service", url = "${order-payment.service.url:http://localhost:8070}")
 public interface OrderPaymentServiceClient {
 
     /**
