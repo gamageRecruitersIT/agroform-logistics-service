@@ -9,7 +9,6 @@ import com.example.logistics.exception.ResourceNotFoundException;
 import com.example.logistics.repository.LogisticsEventRepository;
 import com.example.logistics.service.LogisticsEventService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
