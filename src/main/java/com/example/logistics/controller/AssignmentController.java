@@ -1,9 +1,12 @@
 package com.example.logistics.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.example.logistics.dto.request.AssignmentRequestDto;
 import com.example.logistics.dto.response.ApiResponse;
 import com.example.logistics.dto.response.AssignmentResponseDto;
 import com.example.logistics.dto.response.TaskResponseDto;
+import com.example.logistics.security.CurrentUser;
 import com.example.logistics.service.AssignmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,9 +20,6 @@ import java.util.UUID;
 /**
  * Handles driver assignment and transport task management.
  * Base path: /api/v1/logistics/assignments
- *
- * Note: transporterId is currently passed as a header (X-Transporter-Id) as a
- * placeholder until Navodya's JWT extraction is integrated.
  */
 @RestController
 @RequestMapping("/api/v1/logistics/assignments")
@@ -34,12 +34,12 @@ public class AssignmentController {
      * Role: TRANSPORTER
      */
     @PostMapping
+    @PreAuthorize("hasRole('TRANSPORTER')")
     public ResponseEntity<ApiResponse<AssignmentResponseDto>> assignDriverAndVehicle(
-            // TODO (Navodya): Replace with @AuthenticationPrincipal or JWT claim extraction.
-            @RequestHeader("X-Transporter-Id") UUID transporterId,
+            CurrentUser user,
             @Valid @RequestBody AssignmentRequestDto dto) {
 
-        AssignmentResponseDto response = assignmentService.assignDriverAndVehicle(transporterId, dto);
+        AssignmentResponseDto response = assignmentService.assignDriverAndVehicle(user.userId(), dto);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Driver and vehicle assigned successfully.", response));
@@ -51,6 +51,7 @@ public class AssignmentController {
      * Role: TRANSPORTER, DRIVER, FARMER
      */
     @GetMapping("/driver/{driverId}/current")
+    @PreAuthorize("hasAnyRole('FARMER','TRANSPORTER','DRIVER')")
     public ResponseEntity<ApiResponse<AssignmentResponseDto>> getCurrentAssignment(
             @PathVariable UUID driverId) {
 
@@ -64,6 +65,7 @@ public class AssignmentController {
      * Role: TRANSPORTER, DRIVER
      */
     @GetMapping("/driver/{driverId}/history")
+    @PreAuthorize("hasAnyRole('TRANSPORTER','DRIVER')")
     public ResponseEntity<ApiResponse<List<AssignmentResponseDto>>> getDriverHistory(
             @PathVariable UUID driverId) {
 
@@ -77,6 +79,7 @@ public class AssignmentController {
      * Role: TRANSPORTER, DRIVER, FARMER
      */
     @GetMapping("/tasks/request/{requestCode}")
+    @PreAuthorize("hasAnyRole('FARMER','TRANSPORTER','DRIVER')")
     public ResponseEntity<ApiResponse<TaskResponseDto>> getTaskByRequestCode(
             @PathVariable String requestCode) {
 
@@ -90,6 +93,7 @@ public class AssignmentController {
      * Role: TRANSPORTER
      */
     @GetMapping("/tasks/transporter/{transporterId}")
+    @PreAuthorize("hasRole('TRANSPORTER')")
     public ResponseEntity<ApiResponse<List<TaskResponseDto>>> getTasksByTransporter(
             @PathVariable UUID transporterId) {
 
@@ -103,6 +107,7 @@ public class AssignmentController {
      * Role: DRIVER, TRANSPORTER
      */
     @GetMapping("/tasks/driver/{driverId}")
+    @PreAuthorize("hasAnyRole('TRANSPORTER','DRIVER')")
     public ResponseEntity<ApiResponse<List<TaskResponseDto>>> getTasksByDriver(
             @PathVariable UUID driverId) {
 

@@ -1,5 +1,7 @@
 package com.example.logistics.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.example.logistics.dto.response.ApiResponse;
 import com.example.logistics.dto.response.VehiclePhotoResponseDto;
 import com.example.logistics.service.VehiclePhotoService;
@@ -27,6 +29,7 @@ public class VehiclePhotoController {
     private final VehiclePhotoService vehiclePhotoService;
     private static final String UPLOAD_DIRECTORY = "uploads/vehicle-photos/";
 
+    @PreAuthorize("hasRole('TRANSPORTER')")
     @PostMapping(value = "/{vehicleId}/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<VehiclePhotoResponseDto>> uploadPhoto(
             @PathVariable UUID vehicleId,
@@ -40,6 +43,7 @@ public class VehiclePhotoController {
                 .body(new ApiResponse<>(true, "Vehicle photo uploaded successfully", response));
     }
 
+    @PreAuthorize("hasAnyRole('FARMER','TRANSPORTER','DRIVER')")
     @GetMapping("/{vehicleId}/photos")
     public ResponseEntity<ApiResponse<List<VehiclePhotoResponseDto>>> getVehiclePhotos(
             @PathVariable UUID vehicleId) {
@@ -52,6 +56,7 @@ public class VehiclePhotoController {
     }
 
 
+    @PreAuthorize("hasAnyRole('FARMER','TRANSPORTER','DRIVER')")
     @GetMapping("/photos/images/{fileName}")
     public ResponseEntity<Resource> serveImage(@PathVariable String fileName) {
         try {

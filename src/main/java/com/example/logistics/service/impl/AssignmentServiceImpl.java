@@ -15,7 +15,11 @@ import com.example.logistics.exception.ResourceNotFoundException;
 import com.example.logistics.repository.DriverAssignmentRepository;
 import com.example.logistics.repository.TransportRequestRepository;
 import com.example.logistics.repository.TransportTaskRepository;
+import com.example.logistics.feign.client.CommunicationClient;
+import com.example.logistics.feign.dto.TransportAssignmentNotificationRequest;
 import com.example.logistics.repository.VehicleRepository;
+import com.example.logistics.security.IdentityVerifier;
+import com.example.logistics.security.UserRole;
 import com.example.logistics.service.AssignmentService;
 import com.example.logistics.service.DeliveryTrackingService;
 import com.example.logistics.service.LogisticsWorkflowService;
@@ -24,6 +28,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -41,7 +47,9 @@ public class AssignmentServiceImpl implements AssignmentService {
     private final VehicleRepository vehicleRepository;
     private final VehicleService vehicleService;           // Vasitha's service
     private final DeliveryTrackingService deliveryTrackingService; // Dilum's service
-        private final LogisticsWorkflowService logisticsWorkflowService;
+    private final LogisticsWorkflowService logisticsWorkflowService;
+    private final IdentityVerifier identityVerifier;           // Navodya: Identity & Access Feign check
+    private final CommunicationClient communicationClient;     // Navodya: Communication & Support Feign client
 
     @Override
     @Transactional
@@ -66,6 +74,10 @@ public class AssignmentServiceImpl implements AssignmentService {
             throw new BadRequestException(
                     "A task already exists for transport request: " + dto.getTransportRequestCode());
         }
+
+        // Step 2b: Driver must be an ACTIVE DRIVER per Identity Service (transporter role is enforced
+        // by @PreAuthorize on the JWT claim, so no Feign call is needed for the caller).
+        identityVerifier.requireActive(dto.getDriverId(), UserRole.DRIVER);
 
         // Step 3: Check driver is free (no active assignment)
         // DB also enforces this via partial unique index uq_driver_active_assignment,
@@ -129,6 +141,8 @@ public class AssignmentServiceImpl implements AssignmentService {
                 vehicle.getVehicleCode(),
                 createdBy
         );
+
+        notifyAssignmentAfterCommit(request, savedTask, vehicle.getVehicleCode(), dto.getDriverId());
 
         log.info("Assignment complete. Task: {}, Assignment: {}",
                 savedTask.getTransportTaskCode(), savedAssignment.getAssignmentId());
@@ -199,6 +213,24 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .stream()
                 .map(this::mapToTaskResponse)
                 .collect(Collectors.toList());
+    }
+
+    // Best-effort: sent only once the assignment is committed; a failure is logged, never propagated.
+    private void notifyAssignmentAfterCommit(TransportRequest request, TransportTask task,
+                                             String vehicleCode, UUID driverId) {
+        TransportAssignmentNotificationRequest payload = new TransportAssignmentNotificationRequest(
+                request.getTransportRequestCode(), task.getTransportTaskCode(), driverId,
+                request.getFarmerId(), vehicleCode, task.getAssignedAt().toInstant());
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    communicationClient.sendTransportAssignmentNotification(payload);
+                } catch (Exception ex) {
+                    log.warn("Assignment notification failed for task {}: {}", payload.taskCode(), ex.getMessage());
+                }
+            }
+        });
     }
 
     // ─── Mapping Helpers ────────────────────────────────────────────────────────

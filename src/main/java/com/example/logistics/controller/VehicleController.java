@@ -1,5 +1,7 @@
 package com.example.logistics.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.example.logistics.dto.request.VehicleRegistrationRequestDto;
 import com.example.logistics.dto.response.ApiResponse;
 import com.example.logistics.dto.response.VehicleResponseDto;
@@ -25,6 +27,7 @@ public class VehicleController {
     private final VehicleService vehicleService;
 
     @PostMapping
+    @PreAuthorize("hasRole('TRANSPORTER')")
     public ResponseEntity<ApiResponse<VehicleResponseDto>> registerVehicle(
             @Valid @RequestBody VehicleRegistrationRequestDto requestDto) {
 
@@ -35,6 +38,7 @@ public class VehicleController {
     }
 
     @GetMapping("/{vehicleCode}")
+    @PreAuthorize("hasAnyRole('FARMER','TRANSPORTER','DRIVER')")
     public ResponseEntity<ApiResponse<VehicleResponseDto>> getVehicleByCode(
             @PathVariable String vehicleCode) {
         VehicleResponseDto response = vehicleService.getVehicleByCode(vehicleCode);
@@ -43,6 +47,7 @@ public class VehicleController {
 
 
     @GetMapping("/transporter/{transporterId}")
+    @PreAuthorize("hasRole('TRANSPORTER')")
     public ResponseEntity<ApiResponse<List<VehicleResponseDto>>> getVehiclesByTransporterId(
             @PathVariable UUID transporterId) {
 
@@ -55,6 +60,7 @@ public class VehicleController {
 
 
     @PatchMapping("/{vehicleCode}/status")
+    @PreAuthorize("hasRole('TRANSPORTER')")
     public ResponseEntity<ApiResponse<VehicleResponseDto>> updateVehicleAvailability(
             @PathVariable String vehicleCode,
             @RequestParam String status) {
