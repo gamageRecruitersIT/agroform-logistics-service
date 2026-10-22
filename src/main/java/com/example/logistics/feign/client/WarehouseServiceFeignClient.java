@@ -1,5 +1,6 @@
 package com.example.logistics.feign.client;
 
+import com.example.logistics.dto.response.ApiResponse;
 import com.example.logistics.feign.dto.WarehouseDeliveryNotificationRequest;
 import com.example.logistics.feign.dto.WarehouseDeliveryNotificationResponse;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -14,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 public interface WarehouseServiceFeignClient {
 
     @PostMapping("/api/v1/warehouse/internal/delivery-notification")
-    WarehouseDeliveryNotificationResponse notifyDeliveryArrival(
+    ApiResponse<WarehouseDeliveryNotificationResponse> notifyDeliveryArrival(
             @RequestBody WarehouseDeliveryNotificationRequest request
     );
 }
