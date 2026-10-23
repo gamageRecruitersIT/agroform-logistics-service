@@ -1,6 +1,7 @@
 package com.example.logistics.service.impl;
 
 import com.example.logistics.dto.request.WarehouseReConfirmRequest;
+import com.example.logistics.dto.response.ApiResponse;
 import com.example.logistics.dto.response.WarehouseReConfirmResponse;
 import com.example.logistics.entity.DeliveryStatusEnum;
 import com.example.logistics.exception.BadRequestException;
@@ -63,8 +64,10 @@ public class WarehouseVerificationServiceImpl implements WarehouseVerificationSe
                 );
 
         try {
-            WarehouseDeliveryNotificationResponse response =
+            // Warehouse wraps its reply in ApiResponse: {success, message, data:{acknowledgementStatus,...}}
+            ApiResponse<WarehouseDeliveryNotificationResponse> envelope =
                     warehouseServiceFeignClient.notifyDeliveryArrival(request);
+            WarehouseDeliveryNotificationResponse response = envelope != null ? envelope.getData() : null;
 
             String ack = response != null ? response.getAcknowledgementStatus() : null;
             log.info("[WarehouseVerification] Warehouse acknowledged task={} ack={}",
@@ -103,7 +106,7 @@ public class WarehouseVerificationServiceImpl implements WarehouseVerificationSe
         log.info("[WarehouseVerification] Re-confirmation received for task={} confirmedStatus={}",
                 taskId, confirmedString);
 
-        // ── Parse and validate the confirmed status ───────────────────────────
+        // ── Parse and validate the confirmed status ──────────────────────────────
         DeliveryStatusEnum confirmedStatus;
         try {
             confirmedStatus = DeliveryStatusEnum.valueOf(confirmedString);
@@ -124,9 +127,7 @@ public class WarehouseVerificationServiceImpl implements WarehouseVerificationSe
             );
         }
 
-        // ── Confirm delivery status via DeliveryTrackingService ──────────────
-        // confirmStatusFromWarehouse moves the status forward if not yet reached,
-        // or returns false (no-op) if already at or past the confirmed value.
+        // ── Confirm delivery status via DeliveryTrackingService ──────────────────
         try {
             String notes = request.getNotes() != null
                     ? "Re-confirmed by Warehouse Service: " + request.getNotes()
