@@ -66,6 +66,7 @@ public class TransportRequestServiceImpl implements TransportRequestService {
                 .pickupLatitude(dto.getPickupLatitude())
                 .pickupLongitude(dto.getPickupLongitude())
                 .pickupAddress(dto.getPickupAddress())
+                .pickupDistrict(normaliseDistrict(dto.getPickupDistrict()))
                 .warehouseId(dto.getWarehouseId())
                 .warehouseLatitude(dto.getWarehouseLatitude())
                 .warehouseLongitude(dto.getWarehouseLongitude())
@@ -77,8 +78,8 @@ public class TransportRequestServiceImpl implements TransportRequestService {
         TransportRequest savedRequest = transportRequestRepository.save(transportRequest);
 
         logisticsWorkflowService.onTransportRequestCreated(
-            savedRequest.getTransportRequestCode(),
-            farmerId.toString()
+                savedRequest.getTransportRequestCode(),
+                farmerId.toString()
         );
 
         return mapToResponseDto(savedRequest);
@@ -89,7 +90,7 @@ public class TransportRequestServiceImpl implements TransportRequestService {
     public TransportRequestResponseDto getTransportRequestByCode(String requestCode) {
         TransportRequest request = transportRequestRepository.findByTransportRequestCode(requestCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Transport request not found with code: " + requestCode));
-        
+
         return mapToResponseDto(request);
     }
 
@@ -110,16 +111,24 @@ public class TransportRequestServiceImpl implements TransportRequestService {
         TransportRequest updatedRequest = transportRequestRepository.save(request);
 
         if (previousStatus != TransportRequestStatusEnum.CANCELLED
-            && updatedRequest.getRequestStatus() == TransportRequestStatusEnum.CANCELLED) {
+                && updatedRequest.getRequestStatus() == TransportRequestStatusEnum.CANCELLED) {
             logisticsWorkflowService.onTransportCancelled(
-                updatedRequest.getTransportRequestCode(),
-                null,
-                null,
-                null
+                    updatedRequest.getTransportRequestCode(),
+                    null,
+                    null,
+                    null
             );
         }
 
         return mapToResponseDto(updatedRequest);
+    }
+
+    private static String normaliseDistrict(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null; // reported as UNKNOWN / flagged, never guessed
+        }
+        String t = raw.trim().toLowerCase();
+        return Character.toUpperCase(t.charAt(0)) + t.substring(1);
     }
 
     private TransportRequestResponseDto mapToResponseDto(TransportRequest entity) {

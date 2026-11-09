@@ -66,6 +66,10 @@ public class TransportRequest {
     @Column(name = "warehouse_longitude", precision = 10, scale = 7)
     private BigDecimal warehouseLongitude;
 
+    // Normalised pickup district (column added in V6). Used by Monitoring & Reporting.
+    @Column(name = "pickup_district", length = 100)
+    private String pickupDistrict;
+
     @Column(name = "estimated_distance_km", precision = 10, scale = 2)
     private BigDecimal estimatedDistanceKm;
 

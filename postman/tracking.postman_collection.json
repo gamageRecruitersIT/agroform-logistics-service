@@ -1,96 +1,1811 @@
 {
   "info": {
-    "name": "Logistics - Delivery Tracking (Dilum)",
+    "_postman_id": "f9b707cf-65e4-4a4f-8dfc-2824bc789a33",
+    "name": "Agroform- Logistics Service",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Run 'Setup' first, set taskCode (e.g. TTK-AB12CD34) to a task that belongs to {{transporterId}}/{{driverId}}/{{farmerId}}. Run folders in order."
+    "_exporter_id": "41170928"
   },
   "item": [
     {
-      "name": "Setup - mint test tokens (dev only)",
+      "name": "warehouse-verification",
       "item": [
         {
-          "name": "Transporter token",
+          "name": "warehouse-verification",
           "request": {
             "method": "GET",
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/test/token?role=TRANSPORTER&userId={{transporterId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "test",
-                "token"
-              ],
-              "query": [
-                {
-                  "key": "role",
-                  "value": "TRANSPORTER"
-                },
-                {
-                  "key": "userId",
-                  "value": "{{transporterId}}"
-                }
-              ]
+              "raw": ""
             }
           },
-          "event": [
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Delivery Tracking",
+      "item": [
+        {
+          "name": "Tracking - happy path",
+          "item": [
             {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.collectionVariables.set('transporterToken', pm.response.json().data);"
-                ]
-              }
+              "name": "01 Init tracking (TRANSPORTER) -> 201",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{transporterToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/init",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "init"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "02 Get current status (FARMER)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{farmerToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "03 Status -> LOADED (DRIVER)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newStatus\": \"LOADED\",\n  \"latitude\": 6.9271,\n  \"longitude\": 79.8612,\n  \"notes\": \"Loaded at farm\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "status"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "04 Live location ping (DRIVER)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"latitude\": 7.0,\n  \"longitude\": 80.0,\n  \"notes\": \"On the road\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/location",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "location"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "05 Status -> IN_TRANSIT (DRIVER)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newStatus\": \"IN_TRANSIT\",\n  \"latitude\": 7.1,\n  \"longitude\": 80.1\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "status"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "06 Flag delay (DRIVER)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Heavy traffic on A1\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/delay",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "delay"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "07 Resolve delay (TRANSPORTER)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{transporterToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Traffic cleared\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/delay/resolve",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "delay",
+                    "resolve"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "08 Status -> DELIVERED (DRIVER)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newStatus\": \"DELIVERED\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "status"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "09 Status -> UNLOADED_AT_WAREHOUSE (DRIVER)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newStatus\": \"UNLOADED_AT_WAREHOUSE\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "status"
+                  ]
+                }
+              },
+              "response": []
             }
           ]
         },
         {
-          "name": "Driver token",
+          "name": "Setup - mint test tokens (dev only)",
+          "item": [
+            {
+              "name": "Transporter token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.collectionVariables.set('transporterToken', pm.response.json().data);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/test/token?role=TRANSPORTER&userId={{transporterId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "test",
+                    "token"
+                  ],
+                  "query": [
+                    {
+                      "key": "role",
+                      "value": "TRANSPORTER"
+                    },
+                    {
+                      "key": "userId",
+                      "value": "{{transporterId}}"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Driver token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.collectionVariables.set('driverToken', pm.response.json().data);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/test/token?role=DRIVER&userId={{driverId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "test",
+                    "token"
+                  ],
+                  "query": [
+                    {
+                      "key": "role",
+                      "value": "DRIVER"
+                    },
+                    {
+                      "key": "userId",
+                      "value": "{{driverId}}"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Farmer token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.collectionVariables.set('farmerToken', pm.response.json().data);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/test/token?role=FARMER&userId={{farmerId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "test",
+                    "token"
+                  ],
+                  "query": [
+                    {
+                      "key": "role",
+                      "value": "FARMER"
+                    },
+                    {
+                      "key": "userId",
+                      "value": "{{farmerId}}"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Tracking - read APIs",
+          "item": [
+            {
+              "name": "My tasks (DRIVER)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/my-tasks",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "my-tasks"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "My tasks (FARMER)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{farmerToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/my-tasks",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "my-tasks"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "My tasks (TRANSPORTER)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{transporterToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/my-tasks",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "my-tasks"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "History without GPS pings (FARMER)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{farmerToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/history",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "history"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "History with GPS pings (TRANSPORTER)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{transporterToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/history?includeLocations=true",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "history"
+                  ],
+                  "query": [
+                    {
+                      "key": "includeLocations",
+                      "value": "true"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Latest location (FARMER)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{farmerToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/location/latest",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "location",
+                    "latest"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Tracking - negative cases",
+          "item": [
+            {
+              "name": "Skip a step (DRIVER) -> 400 InvalidDeliveryStatus",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newStatus\": \"DELIVERED\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "status"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Move backward (DRIVER) -> 400",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newStatus\": \"AWAITING_PICKUP\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "status"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Transporter without override -> 403",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{transporterToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newStatus\": \"LOADED\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "status"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Transporter override without notes -> 400",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{transporterToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newStatus\": \"LOADED\",\n  \"authorizedOverride\": true\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "status"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Transporter override with notes -> 200",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{transporterToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newStatus\": \"AWAITING_PICKUP\",\n  \"authorizedOverride\": true,\n  \"notes\": \"Wrong status tapped by driver\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "status"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Driver override attempt -> 403",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newStatus\": \"AWAITING_PICKUP\",\n  \"authorizedOverride\": true,\n  \"notes\": \"x\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "status"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Farmer updates status -> 403",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{farmerToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newStatus\": \"LOADED\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "status"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Coordinates 0,0 -> 400",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"latitude\": 0,\n  \"longitude\": 0\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/location",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "location"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Latitude out of range -> 400",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"latitude\": 95,\n  \"longitude\": 80\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/location",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "location"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delay reason too short -> 400",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"ab\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/delay",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "delay"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Flag delay twice -> 400",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{driverToken}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Flat tyre\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/delay",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}",
+                    "delay"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Unknown task code -> 404",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{transporterToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/TTK-NOTEXIST",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "TTK-NOTEXIST"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Invalid task code format -> 400",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{transporterToken}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/bad code!",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "bad code!"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "No token -> 401",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "tracking",
+                    "{{taskCode}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Vehicles",
+      "item": [
+        {
+          "name": "1. Register New Vehicle",
           "request": {
-            "method": "GET",
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"transporterId\": \"550e8400-e29b-41d4-a716-446655440000\",\r\n    \"vehicleNumberPlate\": \"WP-CBA-1234\",\r\n    \"engineNumber\": \"ENG987654321\",\r\n    \"vehicleType\": \"TRUCK\",\r\n    \"capacityKg\": 5000.00,\r\n    \"operationArea\": \"Western Province\"\r\n}"
+            },
             "url": {
-              "raw": "{{baseUrl}}/api/test/token?role=DRIVER&userId={{driverId}}",
+              "raw": "{{baseUrl}}/api/v1/logistics/vehicles",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "test",
-                "token"
+                "v1",
+                "logistics",
+                "vehicles"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "2. Get Vehicle by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/logistics/vehicles/VHC-C4C6EB7B",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "logistics",
+                "vehicles",
+                "VHC-C4C6EB7B"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3. Get Transporter Fleet (By Transporter ID)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/logistics/vehicles/transporter/550e8400-e29b-41d4-a716-446655440000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "logistics",
+                "vehicles",
+                "transporter",
+                "550e8400-e29b-41d4-a716-446655440000"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "4. Update Vehicle Availability Status",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/logistics/vehicles/VHC-C4C6EB7B/status?status=UNDER_MAINTENANCE",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "logistics",
+                "vehicles",
+                "VHC-C4C6EB7B",
+                "status"
               ],
               "query": [
                 {
-                  "key": "role",
-                  "value": "DRIVER"
-                },
-                {
-                  "key": "userId",
-                  "value": "{{driverId}}"
+                  "key": "status",
+                  "value": "UNDER_MAINTENANCE",
+                  "description": "Values: AVAILABLE, ASSIGNED, UNDER_MAINTENANCE, INACTIVE"
                 }
               ]
             }
           },
-          "event": [
+          "response": []
+        },
+        {
+          "name": "5. Upload Vehicle Photo",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "value": null
+                },
+                {
+                  "key": "isPrimary",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "displayOrder",
+                  "value": "1",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/logistics/vehicles/{{vehicleId}}/photos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "logistics",
+                "vehicles",
+                "{{vehicleId}}",
+                "photos"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "6. Get Vehicle Photos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/logistics/vehicles/VHC-C4C6EB7B/photos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "logistics",
+                "vehicles",
+                "VHC-C4C6EB7B",
+                "photos"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Driver Assignment & Task Management",
+      "item": [
+        {
+          "name": "1. Driver & Vehicle Assignment",
+          "item": [
             {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.collectionVariables.set('driverToken', pm.response.json().data);"
-                ]
-              }
+              "name": "Assign Driver and Vehicle (Success - 201 Created)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 201\", function () {",
+                      "    pm.response.to.have.status(201);",
+                      "});",
+                      "pm.test(\"Assignment created successfully\", function () {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.expect(jsonData.success).to.eql(true);",
+                      "    pm.expect(jsonData.data).to.have.property('assignmentId');",
+                      "    pm.expect(jsonData.data).to.have.property('transportTaskCode');",
+                      "    if (jsonData.data.transportTaskCode) {",
+                      "        pm.collectionVariables.set(\"taskCode\", jsonData.data.transportTaskCode);",
+                      "    }",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Transporter-Id",
+                    "value": "{{transporterId}}",
+                    "description": "Transporter UUID header"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{transporterToken}}",
+                    "description": "JWT Bearer token (when role-based auth is enabled)"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"transportRequestCode\": \"{{transportRequestCode}}\",\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"driverId\": \"{{driverId}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/assignments",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "assignments"
+                  ]
+                },
+                "description": "Assigns a driver and vehicle to an ACCEPTED transport request.\nAtomically creates TransportTask (status: ASSIGNED) and DriverAssignment (isActive: true)."
+              },
+              "response": []
+            },
+            {
+              "name": "Assign Driver - Conflict: Driver Already Busy (409 Conflict)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 409 Conflict\", function () {",
+                      "    pm.response.to.have.status(409);",
+                      "});",
+                      "pm.test(\"Returns DriverAlreadyAssignedException error message\", function () {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.expect(jsonData.success).to.eql(false);",
+                      "    pm.expect(jsonData.message).to.include(\"already assigned\");",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Transporter-Id",
+                    "value": "{{transporterId}}"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{transporterToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"transportRequestCode\": \"{{transportRequestCode}}\",\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"driverId\": \"{{driverId}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/assignments",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "assignments"
+                  ]
+                },
+                "description": "Tests validation that a driver cannot have two active assignments concurrently."
+              },
+              "response": []
+            },
+            {
+              "name": "Assign Driver - Conflict: Vehicle Not Available (409 Conflict)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 409 Conflict\", function () {",
+                      "    pm.response.to.have.status(409);",
+                      "});",
+                      "pm.test(\"Returns VehicleNotAvailableException error message\", function () {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.expect(jsonData.success).to.eql(false);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Transporter-Id",
+                    "value": "{{transporterId}}"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{transporterToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"transportRequestCode\": \"{{transportRequestCode}}\",\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"driverId\": \"{{driverId}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/assignments",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "assignments"
+                  ]
+                },
+                "description": "Tests vehicle availability check coordination with Vasitha's module."
+              },
+              "response": []
+            },
+            {
+              "name": "Assign Driver - Bad Request: Missing Required Fields (400 Bad Request)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 400 Bad Request\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "X-Transporter-Id",
+                    "value": "{{transporterId}}"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{transporterToken}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"transportRequestCode\": null,\n  \"vehicleId\": null,\n  \"driverId\": null\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/assignments",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "assignments"
+                  ]
+                },
+                "description": "Tests payload validation (@NotNull constraints on DTO)."
+              },
+              "response": []
             }
           ]
+        },
+        {
+          "name": "2. Driver Assignment Queries",
+          "item": [
+            {
+              "name": "Get Current Active Assignment for Driver",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test(\"Active assignment retrieved\", function () {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.expect(jsonData.success).to.eql(true);",
+                      "    pm.expect(jsonData.data.driverId).to.eql(pm.collectionVariables.get(\"driverId\"));",
+                      "    pm.expect(jsonData.data.isActive).to.eql(true);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{transporterToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/assignments/driver/{{driverId}}/current",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "assignments",
+                    "driver",
+                    "{{driverId}}",
+                    "current"
+                  ]
+                },
+                "description": "Looks up the single currently active assignment for a driver."
+              },
+              "response": []
+            },
+            {
+              "name": "Get Full Assignment History for Driver",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test(\"History array returned\", function () {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.expect(jsonData.success).to.eql(true);",
+                      "    pm.expect(Array.isArray(jsonData.data)).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{transporterToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/assignments/driver/{{driverId}}/history",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "assignments",
+                    "driver",
+                    "{{driverId}}",
+                    "history"
+                  ]
+                },
+                "description": "Retrieves the full list of assignments ever assigned to this driver, sorted newest first."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "3. Transport Task Queries",
+          "item": [
+            {
+              "name": "Get Transport Task by Request Code",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test(\"Task details returned\", function () {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.expect(jsonData.success).to.eql(true);",
+                      "    pm.expect(jsonData.data).to.have.property('transportTaskCode');",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{transporterToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/assignments/tasks/request/{{transportRequestCode}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "assignments",
+                    "tasks",
+                    "request",
+                    "{{transportRequestCode}}"
+                  ]
+                },
+                "description": "Fetches the transport task linked to a specific public transport request code."
+              },
+              "response": []
+            },
+            {
+              "name": "Get All Transport Tasks for Transporter",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test(\"Transporter task list returned\", function () {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.expect(jsonData.success).to.eql(true);",
+                      "    pm.expect(Array.isArray(jsonData.data)).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{transporterToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/assignments/tasks/transporter/{{transporterId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "assignments",
+                    "tasks",
+                    "transporter",
+                    "{{transporterId}}"
+                  ]
+                },
+                "description": "Lists all transport tasks belonging to a transporter."
+              },
+              "response": []
+            },
+            {
+              "name": "Get All Transport Tasks for Driver",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "pm.test(\"Driver task list returned\", function () {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.expect(jsonData.success).to.eql(true);",
+                      "    pm.expect(Array.isArray(jsonData.data)).to.be.true;",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{transporterToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/logistics/assignments/tasks/driver/{{driverId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "logistics",
+                    "assignments",
+                    "tasks",
+                    "driver",
+                    "{{driverId}}"
+                  ]
+                },
+                "description": "Lists all transport tasks ever assigned to a driver."
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Transport Request API",
+      "item": [
+        {
+          "name": "2. Get Transport Request By Code",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8083/api/v1/logistics/requests/TRQ-1F4497E7",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8083",
+              "path": [
+                "api",
+                "v1",
+                "logistics",
+                "requests",
+                "TRQ-1F4497E7"
+              ]
+            }
+          },
+          "response": []
         },
         {
           "name": "Farmer token",
           "request": {
             "method": "GET",
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/test/token?role=FARMER&userId={{farmerId}}",
+              "raw": "http://localhost:8080/api/test/token?role=FARMER&userId=22222222-2222-2222-2222-222222222222",
+              "protocol": "http",
               "host": [
-                "{{baseUrl}}"
+                "localhost"
               ],
+              "port": "8080",
               "path": [
                 "api",
                 "test",
@@ -103,1023 +1818,676 @@
                 },
                 {
                   "key": "userId",
-                  "value": "{{farmerId}}"
+                  "value": "22222222-2222-2222-2222-222222222222"
                 }
               ]
             }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.collectionVariables.set('farmerToken', pm.response.json().data);"
-                ]
+          "response": []
+        },
+        {
+          "name": "1. Create Transport Request",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_secret_09s2}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "22222222-2222-2222-2222-222222222222",
+                "description": "Farmer's UUID coming from API Gateway",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "",
+                "value": "",
+                "type": "text",
+                "disabled": true
               }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"09c03363-0c13-43a7-8058-32c826e85550\",\n  \"pickupLatitude\": 6.9271,\n  \"pickupLongitude\": 79.8612,\n  \"pickupAddress\": \"123 Farm Road, Anuradhapura\",\n  \"warehouseId\": \"c21b2d30-8a62-4309-8488-82550106c559\",\n  \"warehouseLatitude\": 7.2906,\n  \"warehouseLongitude\": 80.6337,\n  \"notes\": \"Fragile, handle with care\"\n}\n"
+            },
+            "url": {
+              "raw": "http://localhost:8083/api/v1/logistics/requests",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8083",
+              "path": [
+                "api",
+                "v1",
+                "logistics",
+                "requests"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "3. Update Transport Request Status",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8083/api/v1/logistics/requests/TRQ-1F4497E7/status?status=ACCEPTED",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8083",
+              "path": [
+                "api",
+                "v1",
+                "logistics",
+                "requests",
+                "TRQ-1F4497E7",
+                "status"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "ACCEPTED"
+                },
+                {
+                  "key": "status",
+                  "value": "REJECTED",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "CANCELLED",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "COMPLETED",
+                  "type": "text",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Test oder",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{auth_secret_1dbp}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/v1/payment/order/id/09c03363-0c13-43a7-8058-32c826e85550",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "v1",
+                "payment",
+                "order",
+                "id",
+                "09c03363-0c13-43a7-8058-32c826e85550"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "identity_login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"suji1@gmail.com\",\r\n  \"password\": \"password1234\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8050/api/auth/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8050",
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Feign + Role Auth Copy",
+      "item": [
+        {
+          "name": "02 - Feign - Identity & Access Service",
+          "item": [
+            {
+              "name": "GET Identity user status (via IdentityServiceClient)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{jwtToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/test/feign/identity/status/{{driverUserId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "test",
+                    "feign",
+                    "identity",
+                    "status",
+                    "{{driverUserId}}"
+                  ]
+                },
+                "description": "Requires identity-service running at identity.service.url and driverUserId to be a real user id it knows about. A connection-refused response is expected if identity-service isn't running — that's still a valid Feign wiring test."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "00 - Dev Tokens",
+          "item": [
+            {
+              "name": "Transport Request API",
+              "item": []
+            },
+            {
+              "name": "Mint Token - TRANSPORTER",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const body = pm.response.json();",
+                      "pm.collectionVariables.set('jwtToken', body.data);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/test/token?role=TRANSPORTER",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "test",
+                    "token"
+                  ],
+                  "query": [
+                    {
+                      "key": "role",
+                      "value": "TRANSPORTER"
+                    }
+                  ]
+                },
+                "description": "Mints a dev JWT with role=TRANSPORTER and stores it in {{jwtToken}}."
+              },
+              "response": []
+            },
+            {
+              "name": "Mint Token - DRIVER",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const body = pm.response.json();",
+                      "pm.collectionVariables.set('jwtToken', body.data);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/test/token?role=DRIVER",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "test",
+                    "token"
+                  ],
+                  "query": [
+                    {
+                      "key": "role",
+                      "value": "DRIVER"
+                    }
+                  ]
+                },
+                "description": "Mints a dev JWT with role=DRIVER and stores it in {{jwtToken}}."
+              },
+              "response": []
+            },
+            {
+              "name": "Mint Token - FARMER",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const body = pm.response.json();",
+                      "pm.collectionVariables.set('jwtToken', body.data);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/test/token?role=FARMER",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "test",
+                    "token"
+                  ],
+                  "query": [
+                    {
+                      "key": "role",
+                      "value": "FARMER"
+                    }
+                  ]
+                },
+                "description": "Mints a dev JWT with role=FARMER and stores it in {{jwtToken}}."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "01 - Role Authorization",
+          "item": [
+            {
+              "name": "GET /api/test/transporter (expects 200 with TRANSPORTER token)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{jwtToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/test/transporter",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "test",
+                    "transporter"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET /api/test/driver (expects 200 with DRIVER token)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{jwtToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/test/driver",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "test",
+                    "driver"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET /api/test/farmer (expects 200 with FARMER token)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{jwtToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/test/farmer",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "test",
+                    "farmer"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "GET /api/test/farmer with DRIVER token (expects 403)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{jwtToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/test/farmer",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "test",
+                    "farmer"
+                  ]
+                },
+                "description": "Run right after minting a DRIVER token to prove role enforcement rejects the wrong role."
+              },
+              "response": []
+            },
+            {
+              "name": "GET /api/test/farmer with no token (expects 401)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/test/farmer",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "test",
+                    "farmer"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "03 - Feign - Communication & Support Service",
+          "item": [
+            {
+              "name": "POST Transport Assignment Notification",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{jwtToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/test/feign/communication/transport-assignment",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "test",
+                    "feign",
+                    "communication",
+                    "transport-assignment"
+                  ]
+                },
+                "description": "Requires communication-service running at communication.service.url."
+              },
+              "response": []
+            },
+            {
+              "name": "POST Delay Notification",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{jwtToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/test/feign/communication/delay",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "test",
+                    "feign",
+                    "communication",
+                    "delay"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "POST Delivery Status Notification",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{jwtToken}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/test/feign/communication/delivery-status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "test",
+                    "feign",
+                    "communication",
+                    "delivery-status"
+                  ]
+                }
+              },
+              "response": []
             }
           ]
         }
       ]
     },
     {
-      "name": "Tracking - happy path",
+      "name": "Transport cost and open route service",
       "item": [
         {
-          "name": "01 Init tracking (TRANSPORTER) -> 201",
+          "name": "Transport Cost",
           "request": {
             "method": "POST",
             "header": [
               {
-                "key": "Authorization",
-                "value": "Bearer {{transporterToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/init",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "init"
-              ]
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "02 Get current status (FARMER)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{farmerToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}"
-              ]
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "03 Status -> LOADED (DRIVER)",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{driverToken}}",
-                "type": "text"
-              },
-              {
                 "key": "Content-Type",
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "status"
-              ]
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"newStatus\": \"LOADED\",\n  \"latitude\": 6.9271,\n  \"longitude\": 79.8612,\n  \"notes\": \"Loaded at farm\"\n}"
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "04 Live location ping (DRIVER)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{driverToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/location",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "location"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"latitude\": 7.0,\n  \"longitude\": 80.0,\n  \"notes\": \"On the road\"\n}"
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "05 Status -> IN_TRANSIT (DRIVER)",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{driverToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "status"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"newStatus\": \"IN_TRANSIT\",\n  \"latitude\": 7.1,\n  \"longitude\": 80.1\n}"
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "06 Flag delay (DRIVER)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{driverToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/delay",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "delay"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reason\": \"Heavy traffic on A1\"\n}"
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "07 Resolve delay (TRANSPORTER)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{transporterToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/delay/resolve",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "delay",
-                "resolve"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reason\": \"Traffic cleared\"\n}"
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "08 Status -> DELIVERED (DRIVER)",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{driverToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "status"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"newStatus\": \"DELIVERED\"\n}"
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "09 Status -> UNLOADED_AT_WAREHOUSE (DRIVER)",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{driverToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "status"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"newStatus\": \"UNLOADED_AT_WAREHOUSE\"\n}"
-            },
-            "description": ""
-          }
-        }
-      ]
-    },
-    {
-      "name": "Tracking - read APIs",
-      "item": [
-        {
-          "name": "My tasks (DRIVER)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{driverToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/my-tasks",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "my-tasks"
-              ]
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "My tasks (FARMER)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{farmerToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/my-tasks",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "my-tasks"
-              ]
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "My tasks (TRANSPORTER)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{transporterToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/my-tasks",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "my-tasks"
-              ]
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "History without GPS pings (FARMER)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{farmerToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/history",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "history"
-              ]
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "History with GPS pings (TRANSPORTER)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{transporterToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/history?includeLocations=true",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "history"
-              ],
-              "query": [
-                {
-                  "key": "includeLocations",
-                  "value": "true"
+              "raw": "{\n  \"transporterId\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"originLat\": 6.927079,\n  \"originLng\": 79.861244,\n  \"destinationLat\": 7.290572,\n  \"destinationLng\": 80.633726,\n  \"productWeight\": 150.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
                 }
-              ]
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "Latest location (FARMER)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{farmerToken}}",
-                "type": "text"
               }
-            ],
+            },
             "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/location/latest",
+              "raw": "http://localhost:8083/api/v1/logistics/cost/preview",
+              "protocol": "http",
               "host": [
-                "{{baseUrl}}"
+                "localhost"
               ],
+              "port": "8083",
               "path": [
                 "api",
                 "v1",
                 "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "location",
-                "latest"
+                "cost",
+                "preview"
               ]
-            },
-            "description": ""
-          }
-        }
-      ]
-    },
-    {
-      "name": "Tracking - negative cases",
-      "item": [
-        {
-          "name": "Skip a step (DRIVER) -> 400 InvalidDeliveryStatus",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{driverToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "status"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"newStatus\": \"DELIVERED\"\n}"
-            },
-            "description": ""
-          }
+            }
+          },
+          "response": []
         },
         {
-          "name": "Move backward (DRIVER) -> 400",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{driverToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "status"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"newStatus\": \"AWAITING_PICKUP\"\n}"
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "Transporter without override -> 403",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{transporterToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "status"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"newStatus\": \"LOADED\"\n}"
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "Transporter override without notes -> 400",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{transporterToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "status"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"newStatus\": \"LOADED\",\n  \"authorizedOverride\": true\n}"
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "Transporter override with notes -> 200",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{transporterToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "status"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"newStatus\": \"AWAITING_PICKUP\",\n  \"authorizedOverride\": true,\n  \"notes\": \"Wrong status tapped by driver\"\n}"
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "Driver override attempt -> 403",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{driverToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "status"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"newStatus\": \"AWAITING_PICKUP\",\n  \"authorizedOverride\": true,\n  \"notes\": \"x\"\n}"
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "Farmer updates status -> 403",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{farmerToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/status",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "status"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"newStatus\": \"LOADED\"\n}"
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "Coordinates 0,0 -> 400",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{driverToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/location",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "location"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"latitude\": 0,\n  \"longitude\": 0\n}"
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "Latitude out of range -> 400",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{driverToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/location",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "location"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"latitude\": 95,\n  \"longitude\": 80\n}"
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "Delay reason too short -> 400",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{driverToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/delay",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "delay"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reason\": \"ab\"\n}"
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "Flag delay twice -> 400",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{driverToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}/delay",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}",
-                "delay"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reason\": \"Flat tyre\"\n}"
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "Unknown task code -> 404",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{transporterToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/TTK-NOTEXIST",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "TTK-NOTEXIST"
-              ]
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "Invalid task code format -> 400",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{transporterToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/bad code!",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "bad code!"
-              ]
-            },
-            "description": ""
-          }
-        },
-        {
-          "name": "No token -> 401",
+          "name": "OpenRouteService",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/logistics/tracking/{{taskCode}}",
+              "raw": "https://api.openrouteservice.org/v2/directions/driving-car?api_key=eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjM3OTNmYzgzYzEyNDQwMTA5YTk2NWNiMWRmMzVkYWI0IiwiaCI6Im11cm11cjY0In0=&start=79.861244,6.927079&end=80.633726,7.290572",
+              "protocol": "https",
               "host": [
-                "{{baseUrl}}"
+                "api",
+                "openrouteservice",
+                "org"
               ],
               "path": [
-                "api",
-                "v1",
-                "logistics",
-                "tracking",
-                "{{taskCode}}"
+                "v2",
+                "directions",
+                "driving-car"
+              ],
+              "query": [
+                {
+                  "key": "api_key",
+                  "value": "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjM3OTNmYzgzYzEyNDQwMTA5YTk2NWNiMWRmMzVkYWI0IiwiaCI6Im11cm11cjY0In0="
+                },
+                {
+                  "key": "start",
+                  "value": "79.861244,6.927079"
+                },
+                {
+                  "key": "end",
+                  "value": "80.633726,7.290572"
+                }
               ]
-            },
-            "description": ""
-          }
+            }
+          },
+          "response": []
         }
       ]
-    }
-  ],
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:8083"
-    },
-    {
-      "key": "taskCode",
-      "value": "TTK-XXXXXXXX"
-    },
-    {
-      "key": "transporterId",
-      "value": "00000000-0000-0000-0000-000000000001"
-    },
-    {
-      "key": "driverId",
-      "value": "00000000-0000-0000-0000-000000000002"
-    },
-    {
-      "key": "farmerId",
-      "value": "00000000-0000-0000-0000-000000000003"
-    },
-    {
-      "key": "transporterToken",
-      "value": ""
-    },
-    {
-      "key": "driverToken",
-      "value": ""
-    },
-    {
-      "key": "farmerToken",
-      "value": ""
     }
   ]
 }
