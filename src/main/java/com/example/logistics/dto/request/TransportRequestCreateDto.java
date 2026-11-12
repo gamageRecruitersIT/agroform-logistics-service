@@ -24,6 +24,9 @@ public class TransportRequestCreateDto {
 
     private String pickupAddress;
 
+    // District of the farm (canonical Identity district name, e.g. "Colombo").
+    private String pickupDistrict;
+
     private UUID warehouseId;
 
     private BigDecimal warehouseLatitude;
