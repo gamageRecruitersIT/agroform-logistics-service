@@ -21,12 +21,12 @@ public class IdentityVerifier {
 
     private final IdentityServiceClient identityServiceClient;
 
-    public void requireActive(UUID userId, UserRole expectedRole) {
-        UserStatusDto status = identityServiceClient.getUserStatus(userId).getData();
+    public void requireActive(UUID userId, UserRole expectedRole, String authorizationHeader) {
+        UserStatusDto status = identityServiceClient.getUserStatus(userId, authorizationHeader).getData();
         if (status == null) {
             throw new ForbiddenException("Identity service returned no status for user " + userId);
         }
-        if (!expectedRole.name().equalsIgnoreCase(status.roleCode())) {
+        if (!expectedRole.matchesIdentityRoleCode(status.roleCode())) {
             throw new UnauthorizedRoleException(
                     "User " + userId + " has role '" + status.roleCode() + "', expected " + expectedRole);
         }

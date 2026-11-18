@@ -6,6 +6,7 @@ import com.example.logistics.feign.dto.UserStatusDto;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 import java.util.UUID;
 
@@ -19,5 +20,7 @@ import java.util.UUID;
 public interface IdentityServiceClient {
 
     @GetMapping("/api/users/{userId}/status")
-    ApiResponse<UserStatusDto> getUserStatus(@PathVariable("userId") UUID userId);
+    ApiResponse<UserStatusDto> getUserStatus(
+            @PathVariable("userId") UUID userId,
+            @RequestHeader("Authorization") String authorizationHeader);
 }

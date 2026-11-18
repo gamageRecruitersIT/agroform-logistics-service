@@ -37,9 +37,11 @@ public class AssignmentController {
     @PreAuthorize("hasRole('TRANSPORTER')")
     public ResponseEntity<ApiResponse<AssignmentResponseDto>> assignDriverAndVehicle(
             CurrentUser user,
+            @RequestHeader("Authorization") String authorizationHeader,
             @Valid @RequestBody AssignmentRequestDto dto) {
 
-        AssignmentResponseDto response = assignmentService.assignDriverAndVehicle(user.userId(), dto);
+        AssignmentResponseDto response =
+                assignmentService.assignDriverAndVehicle(user.userId(), dto, authorizationHeader);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Driver and vehicle assigned successfully.", response));

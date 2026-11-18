@@ -21,7 +21,8 @@ public interface AssignmentService {
      * @param dto           Assignment request payload.
      * @return AssignmentResponseDto
      */
-    AssignmentResponseDto assignDriverAndVehicle(UUID transporterId, AssignmentRequestDto dto);
+    AssignmentResponseDto assignDriverAndVehicle(
+            UUID transporterId, AssignmentRequestDto dto, String authorizationHeader);
 
     /**
      * Gets the current active assignment for a driver.

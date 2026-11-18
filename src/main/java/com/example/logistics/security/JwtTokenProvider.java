@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets;
 
 // Validates JWTs issued by Identity Service. This service is a pure token consumer —
 // it never issues tokens, only verifies the signature and reads claims from one.
-// Expects claims: "sub" (user id) and "role" (one of TRANSPORTER, DRIVER, FARMER).
+// Reads "userId" and "role" claims, with the subject retained as a legacy userId fallback.
 @Component
 public class JwtTokenProvider {
 
