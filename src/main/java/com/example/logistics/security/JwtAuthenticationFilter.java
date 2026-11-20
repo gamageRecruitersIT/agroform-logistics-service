@@ -22,6 +22,7 @@ import java.util.List;
 // Reads the Authorization: Bearer <jwt> header, validates it, and — on success —
 // populates the SecurityContext with a ROLE_<role> authority so @PreAuthorize
 // checks (hasRole('TRANSPORTER') / hasRole('DRIVER') / hasRole('FARMER')) work.
+// The userId claim is preferred; subject is a fallback for legacy tokens.
 // Prefer these JWT claims over a Feign call to Identity Service wherever the
 // claim alone is enough (see task list: "Prefer JWT claims first").
 //
@@ -53,7 +54,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             try {
                 Claims claims = jwtTokenProvider.parseClaims(token);
-                String userId = claims.getSubject();
+                String userId = claims.get("userId", String.class);
+                if (userId == null) {
+                    userId = claims.getSubject();
+                }
                 String role = claims.get("role", String.class);
 
                 if (role != null && !role.isBlank()) {

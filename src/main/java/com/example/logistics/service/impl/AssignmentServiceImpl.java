@@ -53,7 +53,8 @@ public class AssignmentServiceImpl implements AssignmentService {
 
     @Override
     @Transactional
-    public AssignmentResponseDto assignDriverAndVehicle(UUID transporterId, AssignmentRequestDto dto) {
+    public AssignmentResponseDto assignDriverAndVehicle(
+            UUID transporterId, AssignmentRequestDto dto, String authorizationHeader) {
         log.info("Assigning driver {} and vehicle {} by transporter {}",
                 dto.getDriverId(), dto.getVehicleId(), transporterId);
 
@@ -77,7 +78,7 @@ public class AssignmentServiceImpl implements AssignmentService {
 
         // Step 2b: Driver must be an ACTIVE DRIVER per Identity Service (transporter role is enforced
         // by @PreAuthorize on the JWT claim, so no Feign call is needed for the caller).
-        identityVerifier.requireActive(dto.getDriverId(), UserRole.DRIVER);
+        identityVerifier.requireActive(dto.getDriverId(), UserRole.DRIVER, authorizationHeader);
 
         // Step 3: Check driver is free (no active assignment)
         // DB also enforces this via partial unique index uq_driver_active_assignment,

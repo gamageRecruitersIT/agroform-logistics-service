@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnTransformer;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -33,6 +34,7 @@ public class LogisticsEvent {
     private UUID vehicleId;
 
     @Convert(converter = LogisticsEventTypeConverter.class)
+    @ColumnTransformer(write = "?::logistics_event_type_enum")
     @Column(
             name = "event_type",
             nullable = false,

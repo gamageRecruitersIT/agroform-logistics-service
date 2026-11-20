@@ -21,8 +21,8 @@ import java.util.UUID;
  * Resolves a {@link CurrentUser} controller argument.
  *
  * Identity source, in order (task list: "Prefer JWT claims first"):
- *  1. The JWT - JwtAuthenticationFilter (Navodya) puts the subject (user id) and a ROLE_<role>
- *     authority into the SecurityContext.
+ *  1. The JWT - JwtAuthenticationFilter puts the userId claim (or legacy subject) and a
+ *     ROLE_<role> authority into the SecurityContext.
  *  2. X-User-Id / X-User-Role headers - ONLY when logistics.security.allow-header-auth=true
  *     (local Postman testing / a gateway that validates the JWT itself). Off by default because
  *     a client could spoof these headers if the service is reachable directly.

@@ -75,7 +75,7 @@ public class TransportRequestServiceImpl implements TransportRequestService {
                 .build();
 
         // 4. Save Entity to Database
-        TransportRequest savedRequest = transportRequestRepository.save(transportRequest);
+        TransportRequest savedRequest = transportRequestRepository.saveAndFlush(transportRequest);
 
         logisticsWorkflowService.onTransportRequestCreated(
                 savedRequest.getTransportRequestCode(),
