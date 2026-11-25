@@ -44,8 +44,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
-            FilterChain filterChain
-    ) throws ServletException, IOException {
+            FilterChain filterChain) throws ServletException, IOException {
 
         String header = request.getHeader(AUTHORIZATION_HEADER);
 
@@ -61,15 +60,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String role = claims.get("role", String.class);
 
                 if (role != null && !role.isBlank()) {
-                    List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(userId, null, authorities);
+                    String normalizedRole = role.trim().toUpperCase(java.util.Locale.ROOT).replace(' ', '_');
+                    while (normalizedRole.startsWith("ROLE_")) {
+                        normalizedRole = normalizedRole.substring(5);
+                    }
+                    List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + normalizedRole));
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userId,
+                            null, authorities);
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             } catch (JwtException | IllegalArgumentException ex) {
                 SecurityContextHolder.clearContext();
-                log.debug("Ignoring invalid JWT on {} {}: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
+                log.debug("Ignoring invalid JWT on {} {}: {}", request.getMethod(), request.getRequestURI(),
+                        ex.getMessage());
             }
         }
 
