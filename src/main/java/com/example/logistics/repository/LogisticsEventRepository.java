@@ -1,7 +1,7 @@
 package com.example.logistics.repository;
 
 import com.example.logistics.entity.LogisticsEvent;
-import com.example.logistics.enums.LogisticsEventType;
+import com.example.logistics.entity.enums.LogisticsEventType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

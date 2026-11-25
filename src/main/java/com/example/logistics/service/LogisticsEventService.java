@@ -1,7 +1,7 @@
 package com.example.logistics.service;
 
 import com.example.logistics.dto.response.LogisticsEventResponse;
-import com.example.logistics.enums.LogisticsEventType;
+import com.example.logistics.entity.enums.LogisticsEventType;
 
 import java.util.List;
 

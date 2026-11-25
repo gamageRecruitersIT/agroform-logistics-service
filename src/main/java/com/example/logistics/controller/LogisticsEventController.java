@@ -5,7 +5,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import com.example.logistics.dto.request.LogisticsEventRequest;
 import com.example.logistics.dto.response.ApiResponse;
 import com.example.logistics.dto.response.LogisticsEventResponse;
-import com.example.logistics.enums.LogisticsEventType;
+import com.example.logistics.entity.enums.LogisticsEventType;
 import com.example.logistics.exception.BadRequestException;
 import com.example.logistics.service.LogisticsEventService;
 import lombok.RequiredArgsConstructor;
