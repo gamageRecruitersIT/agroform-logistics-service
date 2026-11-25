@@ -33,7 +33,8 @@ public class VehiclePhotoServiceImpl implements VehiclePhotoService {
 
     @Override
     @Transactional
-    public VehiclePhotoResponseDto uploadPhoto(UUID vehicleId, MultipartFile file, Boolean isPrimary, Integer displayOrder) {
+    public VehiclePhotoResponseDto uploadPhoto(UUID vehicleId, MultipartFile file, Boolean isPrimary,
+            Integer displayOrder) {
 
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found with ID: " + vehicleId));
@@ -46,14 +47,17 @@ public class VehiclePhotoServiceImpl implements VehiclePhotoService {
             }
 
             String originalFileName = file.getOriginalFilename();
-            String fileExtension = originalFileName != null ? originalFileName.substring(originalFileName.lastIndexOf(".")) : ".jpg";
+            String fileExtension = originalFileName != null
+                    ? originalFileName.substring(originalFileName.lastIndexOf("."))
+                    : ".jpg";
             String newFileName = UUID.randomUUID().toString() + fileExtension;
 
             Path filePath = uploadPath.resolve(newFileName);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
             if (isPrimary != null && isPrimary) {
-                Optional<VehiclePhoto> existingPrimary = photoRepository.findByVehicleVehicleIdAndIsPrimaryTrue(vehicleId);
+                Optional<VehiclePhoto> existingPrimary = photoRepository
+                        .findByVehicleVehicleIdAndIsPrimaryTrue(vehicleId);
                 existingPrimary.ifPresent(photo -> {
                     photo.setIsPrimary(false);
                     photoRepository.saveAndFlush(photo);
@@ -69,7 +73,7 @@ public class VehiclePhotoServiceImpl implements VehiclePhotoService {
                     .displayOrder(displayOrder != null ? displayOrder : 0)
                     .build();
 
-            VehiclePhoto savedPhoto = photoRepository.save(newPhoto);
+            VehiclePhoto savedPhoto = photoRepository.saveAndFlush(newPhoto);
             return mapToResponseDto(savedPhoto);
 
         } catch (IOException e) {

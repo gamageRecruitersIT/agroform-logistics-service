@@ -47,7 +47,7 @@ public class VehicleServiceImpl implements VehicleService {
                 .isActive(true)
                 .build();
 
-        return mapToResponseDto(vehicleRepository.save(vehicle));
+        return mapToResponseDto(vehicleRepository.saveAndFlush(vehicle));
     }
 
     @Override
