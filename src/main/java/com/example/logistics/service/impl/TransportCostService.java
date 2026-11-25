@@ -83,7 +83,7 @@ public class TransportCostService {
         return CostPreviewResponse.builder()
                 .routeEstCode("PREVIEW-ONLY")
                 .estimatedCost(finalCost)
-                .distanceKm(actualDistanceKm)
+                .distanceKm(BigDecimal.valueOf(actualDistanceKm).setScale(2, RoundingMode.HALF_UP).doubleValue())
                 .etaMinutes(estimatedTimeMinutes)
                 .routeMapUrl(generatedMapUrl)
                 .build();
