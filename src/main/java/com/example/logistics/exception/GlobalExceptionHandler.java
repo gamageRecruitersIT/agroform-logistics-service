@@ -15,7 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -30,7 +30,7 @@ public class GlobalExceptionHandler {
     }
 
     // 400 - invalid input / business rule violation
-    @ExceptionHandler({BadRequestException.class, InvalidDeliveryStatusException.class})
+    @ExceptionHandler({ BadRequestException.class, InvalidDeliveryStatusException.class })
     public ResponseEntity<ApiResponse<Object>> handleBadRequest(RuntimeException ex) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
@@ -42,8 +42,8 @@ public class GlobalExceptionHandler {
     }
 
     // 409 - duplicates / vehicle or driver conflicts
-    @ExceptionHandler({DuplicateResourceException.class, VehicleNotAvailableException.class,
-            DriverAlreadyAssignedException.class})
+    @ExceptionHandler({ DuplicateResourceException.class, VehicleNotAvailableException.class,
+            DriverAlreadyAssignedException.class })
     public ResponseEntity<ApiResponse<Object>> handleConflict(RuntimeException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage());
     }
@@ -55,7 +55,7 @@ public class GlobalExceptionHandler {
     }
 
     // 403 - TRANSPORTER / DRIVER / FARMER role checks
-    @ExceptionHandler({ForbiddenException.class, UnauthorizedRoleException.class})
+    @ExceptionHandler({ ForbiddenException.class, UnauthorizedRoleException.class })
     public ResponseEntity<ApiResponse<Object>> handleForbidden(RuntimeException ex) {
         return build(HttpStatus.FORBIDDEN, ex.getMessage());
     }
@@ -84,8 +84,8 @@ public class GlobalExceptionHandler {
     }
 
     // 400 - bad JSON / wrong param type
-    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class,
-            IllegalArgumentException.class})
+    @ExceptionHandler({ HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class,
+            IllegalArgumentException.class })
     public ResponseEntity<ApiResponse<Object>> handleMalformed(Exception ex) {
         return build(HttpStatus.BAD_REQUEST, "Malformed request or invalid parameter");
     }
@@ -107,7 +107,8 @@ public class GlobalExceptionHandler {
             return build(HttpStatus.valueOf(status), downstreamMessage(ex));
         }
         if (status == 401 || status == 403) {
-            return build(HttpStatus.valueOf(status), "Dependent service rejected the request: " + downstreamMessage(ex));
+            return build(HttpStatus.valueOf(status),
+                    "Dependent service rejected the request: " + downstreamMessage(ex));
         }
         if (status >= 500) {
             return build(HttpStatus.BAD_GATEWAY, "Dependent service failed to process the request");
@@ -130,11 +131,18 @@ public class GlobalExceptionHandler {
     private String downstreamMessage(FeignException ex) {
         try {
             String msg = objectMapper.readTree(ex.contentUTF8()).path("message").asText("");
-            if (!msg.isBlank()) return msg;
+            if (!msg.isBlank())
+                return msg;
         } catch (Exception ignored) {
             // empty / non-JSON body
         }
         return "Request to dependent service failed";
+    }
+
+    // 404 - unmapped URL
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Object>> handleNoResource(NoResourceFoundException ex) {
+        return build(HttpStatus.NOT_FOUND, "Resource not found");
     }
 
     // 500 - fallback (details only in logs, not sent to client)
