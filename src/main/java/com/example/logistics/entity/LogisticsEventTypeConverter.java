@@ -1,6 +1,6 @@
 package com.example.logistics.entity;
 
-import com.example.logistics.enums.LogisticsEventType;
+import com.example.logistics.entity.enums.LogisticsEventType;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 

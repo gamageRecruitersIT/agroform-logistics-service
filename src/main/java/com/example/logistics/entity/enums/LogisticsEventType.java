@@ -1,4 +1,4 @@
-package com.example.logistics.enums;
+package com.example.logistics.entity.enums;
 
 import java.util.Arrays;
 

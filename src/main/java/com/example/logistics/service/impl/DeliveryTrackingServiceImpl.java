@@ -64,8 +64,10 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
         if (transportTaskId == null) {
             throw new BadRequestException("transportTaskId is required");
         }
-        // The assignment module saves the task with JPA in the same transaction, but the lookup below is raw SQL.
-        // Push the pending inserts to the database first so the task row is visible to it.
+        // The assignment module saves the task with JPA in the same transaction, but
+        // the lookup below is raw SQL.
+        // Push the pending inserts to the database first so the task row is visible to
+        // it.
         entityManager.flush();
         TransportTaskRef task = taskLookup.findById(transportTaskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Transport task not found: " + transportTaskId));
@@ -120,7 +122,7 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
         if (notes != null) {
             status.setNotes(notes);
         }
-        status = deliveryStatusRepository.save(status);
+        status = deliveryStatusRepository.saveAndFlush(status);
 
         trackingUpdateRepository.save(TrackingUpdate.builder()
                 .transportTaskId(task.transportTaskId())
@@ -136,7 +138,8 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
         log.info("Transport task {} delivery status: {} -> {} (confirmed by Warehouse Service)",
                 task.transportTaskCode(), previous, confirmedStatus);
 
-        // updatedBy == null marks a system/warehouse-initiated change (the warehouse listener skips these)
+        // updatedBy == null marks a system/warehouse-initiated change (the warehouse
+        // listener skips these)
         eventPublisher.publishEvent(new DeliveryStatusChangedEvent(
                 task, previous, confirmedStatus, status.isDelayed(), null,
                 null, null, notes, OffsetDateTime.now()));
@@ -178,7 +181,7 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
         List<TrackingUpdate> rows = includeLocations
                 ? trackingUpdateRepository.findByTransportTaskIdOrderByRecordedAtAsc(task.transportTaskId())
                 : trackingUpdateRepository.findByTransportTaskIdAndUpdateTypeNotOrderByRecordedAtAsc(
-                task.transportTaskId(), TrackingUpdateType.LOCATION);
+                        task.transportTaskId(), TrackingUpdateType.LOCATION);
         return rows.stream().map(r -> toTrackingUpdateResponse(r, task)).toList();
     }
 
@@ -239,7 +242,8 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
         DeliveryStatusEnum previous = status.getCurrentStatus();
         DeliveryStatusEnum next = request.getNewStatus();
 
-        // The task is completed (driver released, vehicle freed, request COMPLETED) once it is unloaded;
+        // The task is completed (driver released, vehicle freed, request COMPLETED)
+        // once it is unloaded;
         // not even an authorized override may reopen it.
         if (previous.isTerminal()) {
             throw new InvalidDeliveryStatusException(
@@ -269,7 +273,7 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
         if (notes != null) {
             status.setNotes(notes);
         }
-        status = deliveryStatusRepository.save(status);
+        status = deliveryStatusRepository.saveAndFlush(status); // FIX #5
 
         trackingUpdateRepository.save(TrackingUpdate.builder()
                 .transportTaskId(task.transportTaskId())
@@ -357,7 +361,7 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
         status.setDelayReason(reason);
         status.setDelayedAt(now);
         status.setUpdatedBy(user.userId());
-        status = deliveryStatusRepository.save(status);
+        status = deliveryStatusRepository.saveAndFlush(status); // FIX #5
 
         trackingUpdateRepository.save(TrackingUpdate.builder()
                 .transportTaskId(task.transportTaskId())
@@ -401,7 +405,7 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
         status.setDelayReason(null);
         status.setDelayedAt(null);
         status.setUpdatedBy(user.userId());
-        status = deliveryStatusRepository.save(status);
+        status = deliveryStatusRepository.saveAndFlush(status); // FIX #5
 
         trackingUpdateRepository.save(TrackingUpdate.builder()
                 .transportTaskId(task.transportTaskId())
@@ -426,19 +430,21 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
     // ==================================================================
 
     /**
-     * A completed delivery must not stay flagged as delayed. When the new status is terminal
-     * (UNLOADED_AT_WAREHOUSE) and the delay flag is still raised, clear it and append a
+     * A completed delivery must not stay flagged as delayed. When the new status is
+     * terminal
+     * (UNLOADED_AT_WAREHOUSE) and the delay flag is still raised, clear it and
+     * append a
      * DELAY_RESOLVED history row so the audit trail stays complete.
      */
     private DeliveryStatus clearDelayOnCompletion(DeliveryStatus status, TransportTaskRef task,
-                                                  DeliveryStatusEnum newStatus, UUID actor) {
+            DeliveryStatusEnum newStatus, UUID actor) {
         if (!newStatus.isTerminal() || !status.isDelayed()) {
             return status;
         }
         status.setDelayed(false);
         status.setDelayReason(null);
         status.setDelayedAt(null);
-        status = deliveryStatusRepository.save(status);
+        status = deliveryStatusRepository.saveAndFlush(status); // FIX #5
 
         trackingUpdateRepository.save(TrackingUpdate.builder()
                 .transportTaskId(task.transportTaskId())
@@ -537,7 +543,10 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
         }
     }
 
-    /** Tracking is frozen once the parent transport request is CANCELLED or REJECTED. */
+    /**
+     * Tracking is frozen once the parent transport request is CANCELLED or
+     * REJECTED.
+     */
     private void requireRequestOpen(TransportTaskRef task) {
         if (task.isRequestClosed()) {
             throw new InvalidDeliveryStatusException(
@@ -546,7 +555,10 @@ public class DeliveryTrackingServiceImpl implements DeliveryTrackingService {
         }
     }
 
-    /** Both or neither coordinate, and not the 0,0 "null island" value devices report without a GPS fix. */
+    /**
+     * Both or neither coordinate, and not the 0,0 "null island" value devices
+     * report without a GPS fix.
+     */
     private void requireValidCoordinates(BigDecimal latitude, BigDecimal longitude) {
         if ((latitude == null) != (longitude == null)) {
             throw new BadRequestException("latitude and longitude must be provided together");

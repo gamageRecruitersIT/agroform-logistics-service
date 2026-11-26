@@ -3,7 +3,7 @@ package com.example.logistics.service.impl;
 import com.example.logistics.dto.event.LogisticsKafkaEvent;
 import com.example.logistics.dto.response.LogisticsEventResponse;
 import com.example.logistics.entity.LogisticsEvent;
-import com.example.logistics.enums.LogisticsEventType;
+import com.example.logistics.entity.enums.LogisticsEventType;
 import com.example.logistics.exception.BadRequestException;
 import com.example.logistics.exception.ResourceNotFoundException;
 import com.example.logistics.repository.LogisticsEventRepository;

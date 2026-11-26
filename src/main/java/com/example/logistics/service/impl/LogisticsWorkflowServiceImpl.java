@@ -1,6 +1,6 @@
 package com.example.logistics.service.impl;
 
-import com.example.logistics.enums.LogisticsEventType;
+import com.example.logistics.entity.enums.LogisticsEventType;
 import com.example.logistics.service.LogisticsEventService;
 import com.example.logistics.service.LogisticsWorkflowService;
 import lombok.RequiredArgsConstructor;

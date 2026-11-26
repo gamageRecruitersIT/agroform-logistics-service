@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.security.access.prepost.PreAuthorize;
 /**
  * Internal endpoint for Warehouse & Inventory Service to re-confirm a delivery.
  * Base path: /api/v1/logistics/internal/warehouse-verification
@@ -23,7 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class WarehouseVerificationController {
 
     private final WarehouseVerificationService warehouseVerificationService;
-
+    
+    @PreAuthorize("hasRole('WAREHOUSE_MANAGER')")    
     @PostMapping
     public ResponseEntity<ApiResponse<WarehouseReConfirmResponse>> reConfirmDelivery(
             @Valid @RequestBody WarehouseReConfirmRequest request

@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.UUID;
 
 /**
@@ -23,7 +23,8 @@ import java.util.UUID;
 public class TransportTaskInternalController {
 
     private final TransportTaskDetailService transportTaskDetailService;
-
+    
+    @PreAuthorize("hasRole('WAREHOUSE_MANAGER')")
     @GetMapping("/{transportTaskId}")
     public ResponseEntity<ApiResponse<TransportTaskDetailResponse>> getTaskDetail(
             @PathVariable UUID transportTaskId
